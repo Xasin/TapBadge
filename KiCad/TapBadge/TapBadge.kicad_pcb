@@ -366,6 +366,11 @@
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
     )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Diode_SMD.3dshapes/D_0603_1608Metric.step
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
   )
 
   (module Package_TO_SOT_SMD:SOT-23-6 (layer B.Cu) (tedit 5A02FF57) (tstamp 5B9EE969)
@@ -406,6 +411,11 @@
     (pad 5 smd rect (at 1.1 0 270) (size 1.06 0.65) (layers B.Cu B.Paste B.Mask)
       (net 13 +BATT))
     (model ${KISYS3DMOD}/Package_TO_SOT_SMD.3dshapes/SOT-23-6.wrl
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Package_TO_SOT_SMD.3dshapes/SOT-23-6.wrl
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
@@ -892,6 +902,11 @@
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
     )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Capacitor_SMD.3dshapes/C_0603_1608Metric.step
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
   )
 
   (module Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder (layer B.Cu) (tedit 5B301BBE) (tstamp 5B985410)
@@ -924,6 +939,11 @@
     (pad 2 smd roundrect (at 0.875 0 90) (size 1.05 0.95) (layers B.Cu B.Paste B.Mask) (roundrect_rratio 0.25)
       (net 13 +BATT))
     (model ${KISYS3DMOD}/Capacitor_SMD.3dshapes/C_0603_1608Metric.wrl
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Capacitor_SMD.3dshapes/C_0603_1608Metric.step
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
@@ -964,6 +984,11 @@
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
     )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Capacitor_SMD.3dshapes/C_0603_1608Metric.step
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
   )
 
   (module Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder (layer B.Cu) (tedit 5B301BBE) (tstamp 5B9853EE)
@@ -996,6 +1021,11 @@
     (pad 2 smd roundrect (at 0.875 0 90) (size 1.05 0.95) (layers B.Cu B.Paste B.Mask) (roundrect_rratio 0.25)
       (net 14 GND))
     (model ${KISYS3DMOD}/Capacitor_SMD.3dshapes/C_0603_1608Metric.wrl
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Capacitor_SMD.3dshapes/C_0603_1608Metric.step
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
@@ -1036,6 +1066,11 @@
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
     )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Capacitor_SMD.3dshapes/C_0603_1608Metric.step
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
   )
 
   (module Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder (layer B.Cu) (tedit 5B301BBE) (tstamp 5B9853CC)
@@ -1068,6 +1103,11 @@
     (pad 2 smd roundrect (at 0.874999 0 225) (size 1.05 0.95) (layers B.Cu B.Paste B.Mask) (roundrect_rratio 0.25)
       (net 14 GND))
     (model ${KISYS3DMOD}/Capacitor_SMD.3dshapes/C_0603_1608Metric.wrl
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Capacitor_SMD.3dshapes/C_0603_1608Metric.step
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
@@ -1357,6 +1397,11 @@
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
     )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Package_TO_SOT_SMD.3dshapes/SOT-23.wrl
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
   )
 
   (module Package_TO_SOT_SMD:SOT-23 (layer B.Cu) (tedit 5A02FF57) (tstamp 5B985257)
@@ -1394,6 +1439,11 @@
     (pad 3 smd rect (at 1 0) (size 0.9 0.8) (layers B.Cu B.Paste B.Mask)
       (net 11 /RESET))
     (model ${KISYS3DMOD}/Package_TO_SOT_SMD.3dshapes/SOT-23.wrl
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Package_TO_SOT_SMD.3dshapes/SOT-23.wrl
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
@@ -1481,6 +1531,11 @@
     (pad 3 smd rect (at 1 0 180) (size 0.9 0.8) (layers B.Cu B.Paste B.Mask)
       (net 26 "Net-(D3-Pad2)"))
     (model ${KISYS3DMOD}/Package_TO_SOT_SMD.3dshapes/SOT-23.wrl
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Package_TO_SOT_SMD.3dshapes/SOT-23.wrl
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
@@ -1665,6 +1720,11 @@
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
     )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Resistor_SMD.3dshapes/R_0603_1608Metric.step
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
   )
 
   (module Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder (layer B.Cu) (tedit 5B301BBD) (tstamp 5B9851B1)
@@ -1697,6 +1757,11 @@
     (pad 1 smd roundrect (at -0.875 0 90) (size 1.05 0.95) (layers B.Cu B.Paste B.Mask) (roundrect_rratio 0.25)
       (net 20 +5V))
     (model ${KISYS3DMOD}/Resistor_SMD.3dshapes/R_0603_1608Metric.wrl
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Resistor_SMD.3dshapes/R_0603_1608Metric.step
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
@@ -1737,6 +1802,11 @@
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
     )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Resistor_SMD.3dshapes/R_0603_1608Metric.step
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
   )
 
   (module Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder (layer B.Cu) (tedit 5B301BBD) (tstamp 5B98518F)
@@ -1769,6 +1839,11 @@
     (pad 1 smd roundrect (at -0.875 0 90) (size 1.05 0.95) (layers B.Cu B.Paste B.Mask) (roundrect_rratio 0.25)
       (net 18 "Net-(R13-Pad1)"))
     (model ${KISYS3DMOD}/Resistor_SMD.3dshapes/R_0603_1608Metric.wrl
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Resistor_SMD.3dshapes/R_0603_1608Metric.step
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
@@ -1809,6 +1884,11 @@
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
     )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Resistor_SMD.3dshapes/R_0603_1608Metric.step
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
   )
 
   (module Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder (layer B.Cu) (tedit 5B301BBD) (tstamp 5B98516D)
@@ -1841,6 +1921,11 @@
     (pad 1 smd roundrect (at -0.875 0) (size 1.05 0.95) (layers B.Cu B.Paste B.Mask) (roundrect_rratio 0.25)
       (net 16 "Net-(Q4-Pad1)"))
     (model ${KISYS3DMOD}/Resistor_SMD.3dshapes/R_0603_1608Metric.wrl
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Resistor_SMD.3dshapes/R_0603_1608Metric.step
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
@@ -1881,6 +1966,11 @@
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
     )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Resistor_SMD.3dshapes/R_0603_1608Metric.step
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
   )
 
   (module Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder (layer B.Cu) (tedit 5B301BBD) (tstamp 5B98514B)
@@ -1917,6 +2007,11 @@
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
     )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Resistor_SMD.3dshapes/R_0603_1608Metric.step
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
   )
 
   (module Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder (layer B.Cu) (tedit 5B301BBD) (tstamp 5B98513A)
@@ -1949,6 +2044,11 @@
     (pad 2 smd roundrect (at 0.874999 0 225) (size 1.05 0.95) (layers B.Cu B.Paste B.Mask) (roundrect_rratio 0.25)
       (net 11 /RESET))
     (model ${KISYS3DMOD}/Resistor_SMD.3dshapes/R_0603_1608Metric.wrl
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Resistor_SMD.3dshapes/R_0603_1608Metric.step
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
@@ -2030,6 +2130,11 @@
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
     )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Resistor_SMD.3dshapes/R_0603_1608Metric.step
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
   )
 
   (module Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder (layer B.Cu) (tedit 5B301BBD) (tstamp 5B985107)
@@ -2066,6 +2171,11 @@
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
     )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Resistor_SMD.3dshapes/R_0603_1608Metric.step
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
   )
 
   (module Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder (layer B.Cu) (tedit 5B301BBD) (tstamp 5B9850F6)
@@ -2098,6 +2208,11 @@
     (pad 2 smd roundrect (at 0.875 0) (size 1.05 0.95) (layers B.Cu B.Paste B.Mask) (roundrect_rratio 0.25)
       (net 4 /IR_OUT))
     (model ${KISYS3DMOD}/Resistor_SMD.3dshapes/R_0603_1608Metric.wrl
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
+    (model /usr/local/share/kicad/library/kicad-packages3D/Resistor_SMD.3dshapes/R_0603_1608Metric.step
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
