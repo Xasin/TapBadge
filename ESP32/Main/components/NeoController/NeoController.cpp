@@ -38,8 +38,10 @@ static void IRAM_ATTR u8_to_WS2812(const void* source, rmt_item32_t* destination
 
 NeoController::NeoController(gpio_num_t pin, rmt_channel_t channel, uint8_t length) : pinNo(pin), length(length), channel(channel) {
 	this->colors = new Color[length];
+	this->nextColors = new Color[length];
 
 	clear();
+	apply();
 
 	rmt_config_t cfg = {};
 	rmt_tx_config_t tx_cfg = {};
@@ -58,22 +60,87 @@ NeoController::NeoController(gpio_num_t pin, rmt_channel_t channel, uint8_t leng
 	rmt_config(&cfg);
 	rmt_driver_install(channel, 0, 0);
 	rmt_translator_init(channel, u8_to_WS2812);
+
+	esp_pm_lock_create(ESP_PM_APB_FREQ_MAX, 0, NULL, &powerLock);
 }
 
 void NeoController::update() {
-	rmt_write_sample(channel, reinterpret_cast<const unsigned char *>(this->colors), length*3, true);
-}
-
-void NeoController::clear() {
+	esp_pm_lock_acquire(powerLock);
+	Color::ColorData* writeData = new Color::ColorData[length];
 	for(uint8_t i=0; i<length; i++)
-		colors[i] = {0};
+		writeData[i] = colors[i].getLEDValue();
+
+	rmt_write_sample(channel, reinterpret_cast<const unsigned char *>(writeData), length*3, true);
+	esp_pm_lock_release(powerLock);
+
+	delete writeData;
 }
 
-NeoController::Color * NeoController::operator [](int id) {
-	if(id < length)
-		return &this->colors[id];
-	else
-		return NULL;
+void NeoController::fill(Color color) {
+	for(uint8_t i=0; i<length; i++)
+		nextColors[i] = color;
+}
+void NeoController::clear() {
+	fill(Color());
+}
+
+Color * NeoController::operator[](int id) {
+	return &this->nextColors[id%length];
+}
+
+void NeoController::apply() {
+	for(uint8_t i=0; i<length; i++)
+		this->colors[i] = this->nextColors[i];
+}
+
+void NeoController::fadeTransition(uint32_t duration) {
+	const uint64_t startTime = esp_timer_get_time();
+
+	Color* startColors = new Color[length];
+	for(uint8_t i=0; i<length; i++)
+		startColors[i] = this->colors[i];
+
+	uint32_t passedTicks = 0;
+	while(passedTicks < duration) {
+		for(uint8_t i=0; i<length; i++)
+			this->colors[i].overlay(startColors[i], nextColors[i], (255*passedTicks)/duration);
+		update();
+		vTaskDelay((1000/40) / portTICK_PERIOD_MS);
+
+		passedTicks = esp_timer_get_time() - startTime;
+	}
+
+	this->apply();
+	this->update();
+
+	delete startColors;
+}
+
+void NeoController::swipeTransition(uint32_t duration, bool desc) {
+	const uint32_t perPixelDuration = duration/length;
+	const uint64_t startTime = esp_timer_get_time();
+
+	uint8_t i = 0;
+	uint8_t iLast = 0;
+
+	while(i < length) {
+
+		for(uint8_t j = iLast; iLast <= i; iLast++) {
+			uint8_t jR = desc ? (length-1 - j) : j;
+			colors[jR] = nextColors[jR];
+		}
+
+		iLast = i;
+		update();
+
+		vTaskDelay((1000/40) / portTICK_PERIOD_MS);
+		i = (esp_timer_get_time() - startTime) / perPixelDuration;
+		if((esp_timer_get_time() - startTime) > duration)
+			break;
+	}
+
+	this->apply();
+	this->update();
 }
 
 } /* namespace Touch */
