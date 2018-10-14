@@ -44,7 +44,7 @@ void testTask(void * params) {
 	};
 
 	while(true) {
-		vTaskDelay(10000 / portTICK_PERIOD_MS);
+		vTaskDelay(120000 / portTICK_PERIOD_MS);
 		note.flash(testPattern, 7);
 	}
 }
@@ -80,7 +80,29 @@ extern "C" void app_main(void)
     //gpio_set_direction(2, GPIO_MODE_OUTPUT);
     //rtc_gpio_hold_en(GPIO_NUM_2);
 
-    Peripheral::BLE_Handler tHandler = Peripheral::BLE_Handler();
+    auto tHandler = Peripheral::BLE_Handler();
+    auto tService = Peripheral::Bluetooth::Service(&tHandler);
+    tService.set_uuid16(0x180F);
+
+    auto tChar = Peripheral::Bluetooth::Characteristic(&tService);
+    tChar.set_uuid16(0x2A19);
+    auto tChar2 = Peripheral::Bluetooth::Characteristic(&tService);
+    tChar2.set_uuid16(0x2A19);
+
+    tService.set_primary(true);
+
+    tService.add_char(&tChar);
+    //tService.add_char(&tChar2);
+
+    tHandler.add_service(&tService);
+
+    tHandler.set_name("Tap Badge");
+    tHandler.set_GAP_param(tHandler.get_GAP_defaults());
+    tHandler.set_name("Tap Badge");
+
+    tHandler.setup_GATTs();
+
+    tHandler.start_advertising();
 
     uint32_t colors[] = {Material::RED, Material::PINK, Material::PURPLE, Material::DEEP_PURPLE, Material::INDIGO,
 							 Material::BLUE, Material::CYAN, Material::GREEN, Material::LIME, Material::YELLOW, Material::AMBER, Material::ORANGE, Material::DEEP_ORANGE};
@@ -113,15 +135,15 @@ extern "C" void app_main(void)
     while (true) {
     	note.flash(xasinPattern, 4);
 
-    	vTaskDelay(4000 / portTICK_PERIOD_MS);
+    	vTaskDelay(10000 / portTICK_PERIOD_MS);
 
     	note.flash(neiraPattern, 4);
 
-    	vTaskDelay(4000);
+    	vTaskDelay(10000);
 
     	note.flash(meshPattern, 5);
 
-    	vTaskDelay(4000);
+    	vTaskDelay(10000);
     }
 }
 
