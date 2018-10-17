@@ -23,7 +23,7 @@
 
 using namespace Peripheral;
 
-Peripheral::NeoController rgb  = Peripheral::NeoController(GPIO_NUM_14, RMT_CHANNEL_0, 16);
+Peripheral::NeoController rgb  = Peripheral::NeoController(GPIO_NUM_5, RMT_CHANNEL_0, 1);
 Peripheral::NotifyHandler note = Peripheral::NotifyHandler(&rgb);
 
 esp_err_t event_handler(void *ctx, system_event_t *event)
@@ -68,7 +68,7 @@ extern "C" void app_main(void)
 
     esp_pm_config_esp32_t power_config = {};
     power_config.max_freq_mhz = 240;
-	power_config.min_freq_mhz = 20;
+	power_config.min_freq_mhz = 10;
 	power_config.light_sleep_enable = true;
     esp_pm_configure(&power_config);
 
@@ -109,7 +109,8 @@ extern "C" void app_main(void)
 
     for(uint8_t i=0; i<12; i++) {
 		rgb.fill(colors[i]);
-		rgb.swipeTransition(300000, i%2);
+		rgb.fadeTransition(100000);
+		vTaskDelay(200/portTICK_PERIOD_MS);
     }
     rgb.clear();
 
@@ -133,17 +134,20 @@ extern "C" void app_main(void)
 			{0, 500000}};
 
     while (true) {
+    	tChar.testData++;
+    	tChar.notify();
+
     	note.flash(xasinPattern, 4);
 
-    	vTaskDelay(10000 / portTICK_PERIOD_MS);
+    	vTaskDelay(1000 / portTICK_PERIOD_MS);
 
     	note.flash(neiraPattern, 4);
 
-    	vTaskDelay(10000);
+    	vTaskDelay(1000);
 
     	note.flash(meshPattern, 5);
 
-    	vTaskDelay(10000);
+    	vTaskDelay(1000);
     }
 }
 

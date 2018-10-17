@@ -26,6 +26,7 @@ private:
 	void register_characteristic(Characteristic *newCharacteristic);
 protected:
 	friend BLE_Handler;
+	friend Characteristic;
 
 	std::vector<Characteristic *> characteristics;
 	BLE_Handler * const handler;
@@ -38,6 +39,8 @@ public:
 	esp_gatt_srvc_id_t id;
 
 	Service(BLE_Handler *handler);
+
+	uint8_t get_no_handles();
 
 	void set_primary(bool primary);
 	void set_uuid16(uint16_t uuid);

@@ -25,10 +25,11 @@ void BLE_Handler::GATTs_Callback(esp_gatts_cb_event_t event, esp_gatt_if_t iface
 void BLE_Handler::register_service(Service *service) {
 	assert(GATT_if != 0);
 
-	esp_ble_gatts_create_service(GATT_if, &service->id, 6);
+	esp_ble_gatts_create_service(GATT_if, &service->id, service->get_no_handles());
 }
 
-BLE_Handler::BLE_Handler() : connected_device(),
+BLE_Handler::BLE_Handler() :
+		connected_device(), connection_id(0),
 		GAP_param(), GAP_param_rsp(), GATT_if(0),
 		services(0), service_counter(0) {
 	assert(masterHandler == nullptr);
@@ -94,18 +95,18 @@ void BLE_Handler::process_GAP(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
 void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface, esp_ble_gatts_cb_param_t *param) {
 	switch(event) {
 	case ESP_GATTS_REG_EVT:
-		printf("Registered GATT IF: %d\n", iface);
+		printf("GATT: IF %d\n", iface);
 		GATT_if = iface;
 		for(auto s: services)
 			register_service(s);
 	break;
 	case ESP_GATTS_CREATE_EVT:
-		printf("Registered service UUID: 0x%X; handle is: %d\n", param->create.service_id.id.uuid.uuid.uuid32, param->create.service_handle);
+		printf("GATT: Service UUID: 0x%X; handle is: %d\n", param->create.service_id.id.uuid.uuid.uuid32, param->create.service_handle);
 		services[param->create.service_id.id.inst_id]->set_handle(param->create.service_handle);
 	break;
 	case ESP_GATTS_ADD_CHAR_EVT: {
 		auto p = param->add_char;
-		printf("Registered characteristic UUID: 0x%X; Attribute Handle: %d; Service Handle: %d; Status: %d\n", p.char_uuid.uuid.uuid32, p.attr_handle, p.service_handle, p.status);
+		printf("GATT: Characteristic UUID: 0x%X; Attribute Handle: %d; Service Handle: %d; Status: %d\n", p.char_uuid.uuid.uuid32, p.attr_handle, p.service_handle, p.status);
 		Bluetooth::Service *service = nullptr;
 		for(auto s: services)
 				if(s->handle == p.service_handle) {
@@ -122,15 +123,16 @@ void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 		}
 	case ESP_GATTS_CONNECT_EVT:
 		puts("GATT: Client connected");
-		for(uint16_t i=0; i<ESP_BD_ADDR_LEN; i++)
-			connected_device[i] = param->connect.remote_bda[i];
+
+		memcpy(connected_device, param->connect.remote_bda, ESP_BD_ADDR_LEN);
+		connection_id = param->connect.conn_id;
 		esp_ble_set_encryption(connected_device, ESP_BLE_SEC_ENCRYPT);
 	break;
 	case ESP_GATTS_DISCONNECT_EVT:
 		puts("GATT: Client disconnected");
 	break;
 	default:
-		printf("Unknown GATT event: %d\n", (uint32_t)event);
+		printf("GATT: Unknown event: %d\n", (uint32_t)event);
 	}
 }
 

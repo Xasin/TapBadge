@@ -45,10 +45,13 @@ public:
 
 	void can_read(bool val);
 	void can_write(bool val);
+	void can_notify(bool val);
+	void can_indicate(bool val);
 
-	void send_notify();
+	void send_notify(void *data, uint8_t data_len, bool need_confirm);
 
-	void install();
+	void notify();
+	void indicate();
 };
 
 } /* namespace Bluetooth */

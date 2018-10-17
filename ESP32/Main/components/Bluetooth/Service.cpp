@@ -17,6 +17,10 @@ void Service::register_characteristic(Characteristic *nC) {
 	ESP_ERROR_CHECK(ret);
 }
 
+uint8_t Service::get_no_handles() {
+	return characteristics.size()*2 + 2;
+}
+
 void Service::set_handle(uint16_t newHandle) {
 	assert(this->handle == 0);
 	this->handle = newHandle;
@@ -45,10 +49,9 @@ void Service::set_uuid32(uint32_t uuid) {
 }
 
 void Service::add_char(Characteristic *newChar) {
-	characteristics.push_back(newChar);
+	assert(handle == 0);
 
-	if(handle != 0)
-		register_characteristic(newChar);
+	characteristics.push_back(newChar);
 }
 
 } /* namespace Bluetooth */
