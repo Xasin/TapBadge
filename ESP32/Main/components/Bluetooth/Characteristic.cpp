@@ -82,5 +82,12 @@ void Characteristic::indicate() {
 	send_notify(value.attr_value, value.attr_len, true);
 }
 
+bool Characteristic::is_uuid(esp_bt_uuid_t &tId) {
+	if(tId.len != id.len)
+		return false;
+
+	return memcmp(&id.uuid, &tId.uuid, id.len) == 0;
+}
+
 } /* namespace Bluetooth */
 } /* namespace Peripheral */

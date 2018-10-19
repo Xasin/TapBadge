@@ -13,7 +13,7 @@ namespace Bluetooth {
 
 void Service::register_characteristic(Characteristic *nC) {
 	assert(handle != 0);
-	auto ret = esp_ble_gatts_add_char(handle, &nC->id, nC->perm, nC->prop, &nC->value, &nC->autoResp);
+	auto ret = esp_ble_gatts_add_char(handle, &nC->id, nC->perm, nC->prop, &(nC->value), &(nC->autoResp));
 	ESP_ERROR_CHECK(ret);
 }
 

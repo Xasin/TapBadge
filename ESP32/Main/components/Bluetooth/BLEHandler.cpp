@@ -100,6 +100,35 @@ void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 		for(auto s: services)
 			register_service(s);
 	break;
+	case ESP_GATTS_READ_EVT: {
+		auto data = param->read;
+		printf("GATT: Read requested for handle %d\n", data.handle);
+
+		for(auto s: services) {
+			for(auto c: s->characteristics) {
+				if(c->attr_handle == data.handle) {
+					auto response = new esp_gatt_rsp_t;
+					response->handle 	= data.handle;
+
+					auto rspData = &response->attr_value;
+					rspData->auth_req = 0;
+					rspData->handle   = data.handle;
+					rspData->len      = c->value.attr_len;
+					rspData->offset	 = 0;
+					memcpy(c->value.attr_value, &rspData->value, rspData->len);
+
+					printf("Transmitting value: %d", *(uint16_t*)rspData->value);
+
+					esp_ble_gatts_send_response(GATT_if, data.conn_id, data.trans_id, ESP_GATT_OK, response);
+					return;
+				}
+			}
+		}
+
+		puts("GATT: No matching read handle found!");
+		esp_ble_gatts_send_response(GATT_if, data.conn_id, data.trans_id, ESP_GATT_INVALID_HANDLE, nullptr);
+		break;
+	}
 	case ESP_GATTS_CREATE_EVT:
 		printf("GATT: Service UUID: 0x%X; handle is: %d\n", param->create.service_id.id.uuid.uuid.uuid32, param->create.service_handle);
 		services[param->create.service_id.id.inst_id]->set_handle(param->create.service_handle);
@@ -115,8 +144,9 @@ void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 				}
 		if(service == nullptr) break;
 		for(auto c: service->characteristics)
-			if(c->id.uuid.uuid32 == p.char_uuid.uuid.uuid32) {
+			if(c->is_uuid(p.char_uuid)) {
 				c->attr_handle = p.attr_handle;
+				printf("Wrote attribute handle!\n");
 				break;
 			}
 		break;
@@ -124,12 +154,15 @@ void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 	case ESP_GATTS_CONNECT_EVT:
 		puts("GATT: Client connected");
 
+		esp_ble_gap_stop_advertising();
+
 		memcpy(connected_device, param->connect.remote_bda, ESP_BD_ADDR_LEN);
 		connection_id = param->connect.conn_id;
 		esp_ble_set_encryption(connected_device, ESP_BLE_SEC_ENCRYPT);
 	break;
 	case ESP_GATTS_DISCONNECT_EVT:
 		puts("GATT: Client disconnected");
+		this->start_advertising();
 	break;
 	default:
 		printf("GATT: Unknown event: %d\n", (uint32_t)event);
@@ -141,8 +174,8 @@ esp_ble_adv_data_t BLE_Handler::get_GAP_defaults() {
 	o.set_scan_rsp = false;
 	o.include_name = true;
 	o.include_txpower = true;
-	o.min_interval =  1000 / 1.25;
-	o.max_interval =  1000 / 1.25;
+	o.min_interval =  3000 / 1.25;
+	o.max_interval =  3000 / 1.25;
 	o.appearance   = 6<<6;
 	o.flag = (ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT);
 

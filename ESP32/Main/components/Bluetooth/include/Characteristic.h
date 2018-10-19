@@ -52,6 +52,8 @@ public:
 
 	void notify();
 	void indicate();
+
+	bool is_uuid(esp_bt_uuid_t &id);
 };
 
 } /* namespace Bluetooth */

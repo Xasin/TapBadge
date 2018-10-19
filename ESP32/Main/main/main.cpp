@@ -19,6 +19,8 @@
 
 #include "BLEHandler.h"
 
+#include "peripheral/batman.h"
+
 #include <string.h>
 
 using namespace Peripheral;
@@ -75,6 +77,8 @@ extern "C" void app_main(void)
     TaskHandle_t xHandle = NULL;
     xTaskCreate(testTask, "TTask", 2048, NULL, 2, &xHandle);
 
+    Peripheral::Batman battery = Peripheral::Batman(ADC2_GPIO2_CHANNEL, GPIO_NUM_15);
+
     //esp_sleep_enable_timer_wakeup(3000000);
 
     //gpio_set_direction(2, GPIO_MODE_OUTPUT);
@@ -87,12 +91,17 @@ extern "C" void app_main(void)
     auto tChar = Peripheral::Bluetooth::Characteristic(&tService);
     tChar.set_uuid16(0x2A19);
     auto tChar2 = Peripheral::Bluetooth::Characteristic(&tService);
-    tChar2.set_uuid16(0x2A19);
+
+    tChar2.set_uuid32(0x1234);
+    tChar2.value.attr_len = 2;
+    tChar2.value.attr_max_len = 2;
+    uint16_t batLvl = 0x1337;
+    tChar2.value.attr_value = reinterpret_cast<uint8_t *>(&batLvl);
 
     tService.set_primary(true);
 
     tService.add_char(&tChar);
-    //tService.add_char(&tChar2);
+    tService.add_char(&tChar2);
 
     tHandler.add_service(&tService);
 
@@ -134,20 +143,22 @@ extern "C" void app_main(void)
 			{0, 500000}};
 
     while (true) {
-    	tChar.testData++;
-    	tChar.notify();
+    	batLvl = battery.read();
+    	tChar.testData = batLvl / 42;
+
+    	printf("Bat. lvl: %4d | Chg: %1d\n", batLvl, battery.get_chgstat());
 
     	note.flash(xasinPattern, 4);
 
-    	vTaskDelay(1000 / portTICK_PERIOD_MS);
+    	vTaskDelay(3000 / portTICK_PERIOD_MS);
 
     	note.flash(neiraPattern, 4);
 
-    	vTaskDelay(1000);
+    	vTaskDelay(3000);
 
     	note.flash(meshPattern, 5);
 
-    	vTaskDelay(1000);
+    	vTaskDelay(3000);
     }
 }
 
