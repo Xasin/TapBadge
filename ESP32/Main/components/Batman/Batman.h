@@ -19,14 +19,11 @@ namespace Peripheral {
 class Batman {
 public:
 	const adc2_channel_t adcChannel;
-	const gpio_num_t	 statusChannel;
 
 	uint16_t read_raw();
 	int read();
 
-	uint8_t get_chgstat();
-
-	Batman(adc2_channel_t analogChannel, gpio_num_t statusChannel);
+	Batman(adc2_channel_t analogChannel);
 };
 
 } /* namespace Peripheral */
