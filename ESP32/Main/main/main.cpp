@@ -69,15 +69,15 @@ extern "C" void app_main(void)
     Touch::Control testPad = Touch::Control(TOUCH_PAD_NUM0);
 
     esp_pm_config_esp32_t power_config = {};
-    power_config.max_freq_mhz = 240;
-	power_config.min_freq_mhz = 10;
+    power_config.max_freq_mhz = 80;
+	power_config.min_freq_mhz = 20;
 	power_config.light_sleep_enable = true;
     esp_pm_configure(&power_config);
 
     TaskHandle_t xHandle = NULL;
     xTaskCreate(testTask, "TTask", 2048, NULL, 2, &xHandle);
 
-    Peripheral::Batman battery = Peripheral::Batman(ADC2_GPIO2_CHANNEL, GPIO_NUM_15);
+    Peripheral::Batman battery = Peripheral::Batman(ADC2_GPIO2_CHANNEL);
 
     //esp_sleep_enable_timer_wakeup(3000000);
 
@@ -85,33 +85,41 @@ extern "C" void app_main(void)
     //rtc_gpio_hold_en(GPIO_NUM_2);
 
     auto tHandler = Peripheral::BLE_Handler();
-    auto tService = Peripheral::Bluetooth::Service(&tHandler);
-    tService.set_uuid16(0x180F);
-
-    auto tChar = Peripheral::Bluetooth::Characteristic(&tService);
-    tChar.set_uuid16(0x2A19);
-    auto tChar2 = Peripheral::Bluetooth::Characteristic(&tService);
-
-    tChar2.set_uuid32(0x1234);
-    tChar2.value.attr_len = 2;
-    tChar2.value.attr_max_len = 2;
-    uint16_t batLvl = 0x1337;
-    tChar2.value.attr_value = reinterpret_cast<uint8_t *>(&batLvl);
-
-    tService.set_primary(true);
-
-    tService.add_char(&tChar);
-    tService.add_char(&tChar2);
-
-    tHandler.add_service(&tService);
-
-    tHandler.set_name("Tap Badge");
-    tHandler.set_GAP_param(tHandler.get_GAP_defaults());
-    tHandler.set_name("Tap Badge");
-
-    tHandler.setup_GATTs();
-
-    tHandler.start_advertising();
+//    auto tService = Peripheral::Bluetooth::Service(&tHandler);
+//    tService.set_uuid16(0x180F);
+//
+//    auto tChar = Peripheral::Bluetooth::Characteristic(&tService);
+//    tChar.set_uuid16(0x2A19);
+//    tChar.can_write(true);
+//
+//    tChar.write_cb = [](Peripheral::Bluetooth::Characteristic::write_dataset data) {
+//    	rgb.fill(0xFFFFFF);
+//    	rgb.apply();
+//    	rgb.update();
+//    };
+//
+//    auto tChar2 = Peripheral::Bluetooth::Characteristic(&tService);
+//
+//    tChar2.set_uuid32(0x1234);
+//    tChar2.value.attr_len = 2;
+//    tChar2.value.attr_max_len = 2;
+      uint16_t batLvl = 0x1337;
+//    tChar2.value.attr_value = reinterpret_cast<uint8_t *>(&batLvl);
+//
+//    tService.set_primary(true);
+//
+//    tService.add_char(&tChar);
+//    tService.add_char(&tChar2);
+//
+//    tHandler.add_service(&tService);
+//
+//    tHandler.set_name("Tap Badge");
+//    tHandler.set_GAP_param(tHandler.get_GAP_defaults());
+//    tHandler.set_name("Tap Badge");
+//
+//    tHandler.setup_GATTs();
+//
+//    tHandler.start_advertising();
 
     uint32_t colors[] = {Material::RED, Material::PINK, Material::PURPLE, Material::DEEP_PURPLE, Material::INDIGO,
 							 Material::BLUE, Material::CYAN, Material::GREEN, Material::LIME, Material::YELLOW, Material::AMBER, Material::ORANGE, Material::DEEP_ORANGE};
@@ -144,9 +152,9 @@ extern "C" void app_main(void)
 
     while (true) {
     	batLvl = battery.read();
-    	tChar.testData = batLvl / 42;
+    	//tChar.testData = batLvl / 42;
 
-    	printf("Bat. lvl: %4d | Chg: %1d\n", batLvl, battery.get_chgstat());
+    	printf("Bat. lvl: %4d | Touch: %1d\n", batLvl, testPad.read_raw());
 
     	note.flash(xasinPattern, 4);
 
