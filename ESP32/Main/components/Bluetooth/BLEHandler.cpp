@@ -107,19 +107,7 @@ void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 		for(auto s: services) {
 			for(auto c: s->characteristics) {
 				if(c->attr_handle == data.handle) {
-					auto response = new esp_gatt_rsp_t;
-					response->handle 	= data.handle;
-
-					auto rspData = &response->attr_value;
-					rspData->auth_req = 0;
-					rspData->handle   = data.handle;
-					rspData->len      = c->value.attr_len;
-					rspData->offset	 = 0;
-					memcpy(c->value.attr_value, &rspData->value, rspData->len);
-
-					printf("Transmitting value: %d", *(uint16_t*)rspData->value);
-
-					esp_ble_gatts_send_response(GATT_if, data.conn_id, data.trans_id, ESP_GATT_OK, response);
+					c->read_reply(data);
 					return;
 				}
 			}
@@ -129,6 +117,22 @@ void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 		esp_ble_gatts_send_response(GATT_if, data.conn_id, data.trans_id, ESP_GATT_INVALID_HANDLE, nullptr);
 		break;
 	}
+	case ESP_GATTS_WRITE_EVT: {
+		auto data = param->write;
+		printf("GATT: Write requested for handle: %d\n", data.handle);
+
+		for(auto s: services) {
+			for(auto c: s->characteristics) {
+				if(c->attr_handle == data.handle) {
+					c->handle_write(&data);
+					return;
+				}
+			}
+		}
+		puts("GATT: No matching write handle found!");
+		esp_ble_gatts_send_response(GATT_if, data.conn_id, data.trans_id, ESP_GATT_INVALID_HANDLE, nullptr);
+	}
+	break;
 	case ESP_GATTS_CREATE_EVT:
 		printf("GATT: Service UUID: 0x%X; handle is: %d\n", param->create.service_id.id.uuid.uuid.uuid32, param->create.service_handle);
 		services[param->create.service_id.id.inst_id]->set_handle(param->create.service_handle);

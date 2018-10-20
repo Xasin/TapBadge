@@ -12,10 +12,40 @@
 namespace Peripheral {
 namespace Bluetooth {
 
+void Characteristic::read_reply(esp_ble_gatts_cb_param_t::gatts_read_evt_param readEvent) {
+	esp_gatt_rsp_t response = {};
+	response.handle = readEvent.handle;
+
+	auto rspData = &response.attr_value;
+	rspData->auth_req = 0;
+	rspData->handle   = readEvent.handle;
+	rspData->len      = value.attr_len;
+	rspData->offset	 = 0;
+
+	for(uint16_t i=0; i<rspData->len; i++)
+		rspData->value[i] = value.attr_value[value.attr_len -1 -i];
+
+	esp_ble_gatts_send_response(service->handler->GATT_if, readEvent.conn_id, readEvent.trans_id, ESP_GATT_OK, &response);
+}
+void Characteristic::handle_write(esp_ble_gatts_cb_param_t::gatts_write_evt_param *writeEvent) {
+	if(write_cb != nullptr) {
+		write_dataset data = {};
+		data.data 	= writeEvent->value;
+		data.length = writeEvent->len;
+
+		write_cb(data);
+	}
+
+	if(writeEvent->need_rsp)
+		esp_ble_gatts_send_response(service->handler->GATT_if, writeEvent->conn_id, writeEvent->trans_id, ESP_GATT_OK, nullptr);
+}
+
 Characteristic::Characteristic(Service * service) :
 		attr_handle(0),
 		service(service),
 		id(), perm(), prop(), autoResp(), value() {
+
+	write_cb = nullptr;
 
 	can_read(true);
 	can_notify(true);
@@ -50,10 +80,14 @@ void Characteristic::can_read(bool val) {
 	}
 }
 void Characteristic::can_write(bool val) {
-	if(val)
+	if(val) {
 		perm |= ESP_GATT_PERM_WRITE;
-	else
+		prop |= ESP_GATT_CHAR_PROP_BIT_WRITE;
+	}
+	else {
 		perm &= ~ESP_GATT_PERM_WRITE;
+		prop &= ~ESP_GATT_CHAR_PROP_BIT_WRITE;
+	}
 }
 void Characteristic::can_indicate(bool val) {
 	auto b = ESP_GATT_CHAR_PROP_BIT_INDICATE;

@@ -11,6 +11,7 @@
 #include <functional>
 
 #include "esp_gatts_api.h"
+#include "esp_bt.h"
 
 namespace Peripheral {
 
@@ -26,7 +27,15 @@ protected:
 
 	uint16_t attr_handle;
 
+	virtual void read_reply(esp_ble_gatts_cb_param_t::gatts_read_evt_param readEvent);
+	virtual void handle_write(esp_ble_gatts_cb_param_t::gatts_write_evt_param *writeEvent);
+
 public:
+	struct write_dataset {
+		uint16_t length;
+		void *data;
+	};
+
 	Service * const service;
 
 	esp_bt_uuid_t id;
@@ -37,6 +46,8 @@ public:
 	esp_attr_value_t 		value;
 
 	uint8_t testData;
+
+	std::function<void (write_dataset)> write_cb;
 
 	Characteristic(Service * headService);
 
