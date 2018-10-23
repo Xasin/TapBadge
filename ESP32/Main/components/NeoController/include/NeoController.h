@@ -25,12 +25,12 @@ private:
 	Color * nextColors;
 
 	const gpio_num_t pinNo;
-	const uint8_t length;
 	const rmt_channel_t channel;
 
 	esp_pm_lock_handle_t powerLock;
 
 public:
+	const uint8_t length;
 
 	NeoController(gpio_num_t pin, rmt_channel_t channel, uint8_t length);
 
@@ -39,6 +39,7 @@ public:
 	void clear();
 	void fill(Color color);
 	Color * operator [](int id);
+	Color * get(int id);
 
 	void apply();
 

@@ -36,7 +36,8 @@ static void IRAM_ATTR u8_to_WS2812(const void* source, rmt_item32_t* destination
 	}
 }
 
-NeoController::NeoController(gpio_num_t pin, rmt_channel_t channel, uint8_t length) : pinNo(pin), length(length), channel(channel) {
+NeoController::NeoController(gpio_num_t pin, rmt_channel_t channel, uint8_t length) :
+		pinNo(pin), channel(channel), length(length) {
 	this->colors = new Color[length];
 	this->nextColors = new Color[length];
 
@@ -71,9 +72,9 @@ void NeoController::update() {
 		writeData[i] = colors[i].getLEDValue();
 
 	rmt_write_sample(channel, reinterpret_cast<const unsigned char *>(writeData), length*3, true);
-	esp_pm_lock_release(powerLock);
-
 	delete writeData;
+
+	esp_pm_lock_release(powerLock);
 }
 
 void NeoController::fill(Color color) {
@@ -85,6 +86,9 @@ void NeoController::clear() {
 }
 
 Color * NeoController::operator[](int id) {
+	return get(id);
+}
+Color * NeoController::get(int id) {
 	return &this->nextColors[id%length];
 }
 
