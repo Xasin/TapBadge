@@ -48,7 +48,7 @@ protected:
 		IDLE,
 		ADVERTISING,
 		CONNECTED,
-	} BT_status;
+	} volatile BT_status;
 
 	esp_bd_addr_t connected_device;
 	uint16_t	  connection_id;
