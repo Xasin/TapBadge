@@ -5,6 +5,10 @@
  *      Author: xasin
  */
 
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 #include "driver/touch_pad.h"
 
 #ifndef CONTROL_H_
@@ -15,8 +19,12 @@ namespace Touch {
 class Control {
 private:
 	const touch_pad_t padNo;
-
 public:
+	TaskHandle_t charDetectHandle;
+
+	void char_detect_isr();
+	void char_detect_task();
+
 	Control(touch_pad_t padNo);
 
 	uint16_t read_raw();
