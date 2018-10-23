@@ -41,6 +41,15 @@ protected:
 	static void GAP_Callback(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
 	static void GATTs_Callback(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
 
+	enum {
+		UNINITIALIZED,
+		DISABLED,
+		STARTING,
+		IDLE,
+		ADVERTISING,
+		CONNECTED,
+	} BT_status;
+
 	esp_bd_addr_t connected_device;
 	uint16_t	  connection_id;
 
@@ -50,7 +59,8 @@ protected:
 	esp_gatt_if_t GATT_if;
 
 	std::vector<Service *> services;
-	uint8_t service_counter;
+
+	const char *name;
 
 	void process_GAP(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
 	void process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface, esp_ble_gatts_cb_param_t *param);
@@ -58,17 +68,22 @@ protected:
 	void register_service(Service *service);
 
 public:
-	BLE_Handler();
+	BLE_Handler(const char *name);
 
 	esp_ble_adv_data_t get_GAP_defaults();
 	void set_GAP_param(esp_ble_adv_data_t params);
 
-	void set_name(const char *name);
 	void add_service(Service * newService);
 
-	void setup_GATTs();
+	void setup_GATTS();
+
+	void enable();
+	void disable();
+
+	void disconnect();
 
 	void start_advertising();
+	void stop_advertising();
 };
 
 } /* namespace Peripheral */
