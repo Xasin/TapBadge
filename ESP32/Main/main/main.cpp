@@ -1,10 +1,11 @@
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "esp_wifi.h"
 #include "esp_system.h"
 #include "esp_event.h"
 #include "esp_event_loop.h"
 #include "esp_pm.h"
+#include "esp_timer.h"
 #include "esp32/pm.h"
 #include "nvs_flash.h"
 #include "driver/gpio.h"
@@ -14,6 +15,8 @@
 #include "driver/touch_pad.h"
 
 #include "Control.h"
+#include "MorseHandle.h"
+
 #include "NeoController.h"
 #include "NotifyHandler.h"
 
@@ -27,6 +30,12 @@ using namespace Peripheral;
 
 Peripheral::NeoController rgb  = Peripheral::NeoController(GPIO_NUM_5, RMT_CHANNEL_0, 1);
 Peripheral::NotifyHandler note = Peripheral::NotifyHandler(&rgb);
+
+Peripheral::MorseHandle morse = Peripheral::MorseHandle(120);
+
+Peripheral::BLE_Handler *ble_handler;
+
+uint16_t batLvl;
 
 esp_err_t event_handler(void *ctx, system_event_t *event)
 {
@@ -51,22 +60,50 @@ void testTask(void * params) {
 	}
 }
 
+void setup_bt() {
+    ble_handler = new Peripheral::BLE_Handler("Tap Badge");
+    auto tService = Peripheral::Bluetooth::Service(ble_handler);
+    tService.set_uuid16(0x180F);
+
+    auto tChar = Peripheral::Bluetooth::Characteristic(&tService);
+    tChar.set_uuid16(0x2A19);
+    tChar.can_write(true);
+
+    tChar.write_cb = [](Peripheral::Bluetooth::Characteristic::write_dataset data) {
+    	rgb.fill(0xFFFFFF);
+    	rgb.apply();
+    	rgb.update();
+    };
+
+    auto tChar2 = Peripheral::Bluetooth::Characteristic(&tService);
+
+    tChar2.set_uuid32(0x1234);
+    tChar2.value.attr_len = 2;
+    tChar2.value.attr_max_len = 2;
+    batLvl = 0x1337;
+    tChar2.value.attr_value = reinterpret_cast<uint8_t *>(&batLvl);
+
+    tService.set_primary(true);
+
+    tService.add_char(&tChar);
+    tService.add_char(&tChar2);
+
+    ble_handler->add_service(&tService);
+
+    ble_handler->set_GAP_param(ble_handler->get_GAP_defaults());
+
+    ble_handler->enable();
+
+    //ble_handler->start_advertising();
+}
+
 extern "C" void app_main(void)
 {
     nvs_flash_init();
     tcpip_adapter_init();
     ESP_ERROR_CHECK( esp_event_loop_init(event_handler, NULL) );
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    //ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
-    //ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
-    //ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
-    wifi_config_t sta_config = {};
-    strcpy(reinterpret_cast<char*>(&sta_config.sta.ssid), "TP_LINK_####");
-    //ESP_ERROR_CHECK( esp_wifi_set_config(WIFI_IF_STA, &sta_config) );
-    //ESP_ERROR_CHECK( esp_wifi_start() );
-    //ESP_ERROR_CHECK( esp_wifi_connect() );
 
-    Touch::Control testPad = Touch::Control(TOUCH_PAD_NUM0);
+    esp_timer_init();
 
     esp_pm_config_esp32_t power_config = {};
     power_config.max_freq_mhz = 80;
@@ -74,52 +111,16 @@ extern "C" void app_main(void)
 	power_config.light_sleep_enable = true;
     esp_pm_configure(&power_config);
 
+    setup_bt();
+
     TaskHandle_t xHandle = NULL;
     xTaskCreate(testTask, "TTask", 2048, NULL, 2, &xHandle);
 
+    Touch::Control testPad = Touch::Control(TOUCH_PAD_NUM0);
+    testPad.charDetectHandle = morse.getDecodeHandle();
+
     Peripheral::Batman battery = Peripheral::Batman(ADC2_GPIO2_CHANNEL);
 
-    //esp_sleep_enable_timer_wakeup(3000000);
-
-    //gpio_set_direction(2, GPIO_MODE_OUTPUT);
-    //rtc_gpio_hold_en(GPIO_NUM_2);
-
-    auto tHandler = Peripheral::BLE_Handler();
-//    auto tService = Peripheral::Bluetooth::Service(&tHandler);
-//    tService.set_uuid16(0x180F);
-//
-//    auto tChar = Peripheral::Bluetooth::Characteristic(&tService);
-//    tChar.set_uuid16(0x2A19);
-//    tChar.can_write(true);
-//
-//    tChar.write_cb = [](Peripheral::Bluetooth::Characteristic::write_dataset data) {
-//    	rgb.fill(0xFFFFFF);
-//    	rgb.apply();
-//    	rgb.update();
-//    };
-//
-//    auto tChar2 = Peripheral::Bluetooth::Characteristic(&tService);
-//
-//    tChar2.set_uuid32(0x1234);
-//    tChar2.value.attr_len = 2;
-//    tChar2.value.attr_max_len = 2;
-      uint16_t batLvl = 0x1337;
-//    tChar2.value.attr_value = reinterpret_cast<uint8_t *>(&batLvl);
-//
-//    tService.set_primary(true);
-//
-//    tService.add_char(&tChar);
-//    tService.add_char(&tChar2);
-//
-//    tHandler.add_service(&tService);
-//
-//    tHandler.set_name("Tap Badge");
-//    tHandler.set_GAP_param(tHandler.get_GAP_defaults());
-//    tHandler.set_name("Tap Badge");
-//
-//    tHandler.setup_GATTs();
-//
-//    tHandler.start_advertising();
 
     uint32_t colors[] = {Material::RED, Material::PINK, Material::PURPLE, Material::DEEP_PURPLE, Material::INDIGO,
 							 Material::BLUE, Material::CYAN, Material::GREEN, Material::LIME, Material::YELLOW, Material::AMBER, Material::ORANGE, Material::DEEP_ORANGE};
@@ -130,6 +131,22 @@ extern "C" void app_main(void)
 		vTaskDelay(200/portTICK_PERIOD_MS);
     }
     rgb.clear();
+
+    morse.word_callback = [](std::string &word) {
+    	if(word == "red")
+    		rgb.fill(Material::RED);
+    	else if(word == "blue")
+    		rgb.fill(Material::BLUE);
+    	else if(word == "green")
+    		rgb.fill(Material::GREEN);
+    	else if(word == "off")
+    		rgb.fill(0);
+    	else
+    		return;
+
+    	rgb.apply();
+    	rgb.update();
+    };
 
     NotifyHandler::PatternElement xasinPattern[] = {
     		{Color(Material::RED, 80), 50000},
@@ -156,9 +173,11 @@ extern "C" void app_main(void)
 
     	printf("Bat. lvl: %4d | Touch: %1d\n", batLvl, testPad.read_raw());
 
+    	ble_handler->start_advertising();
     	note.flash(xasinPattern, 4);
 
     	vTaskDelay(3000 / portTICK_PERIOD_MS);
+    	ble_handler->disable();
 
     	note.flash(neiraPattern, 4);
 
