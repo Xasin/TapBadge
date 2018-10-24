@@ -41,6 +41,14 @@ BLE_Handler::BLE_Handler(const char *name) :
 	esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
 	auto ret = esp_bt_controller_init(&bt_cfg);
 	ESP_ERROR_CHECK(ret);
+
+	ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
+	ESP_ERROR_CHECK(ret);
+
+	ret = esp_bluedroid_init();
+	ESP_ERROR_CHECK(ret);
+
+	ret = esp_bt_controller_disable();
 }
 
 void BLE_Handler::process_GAP(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
@@ -205,8 +213,8 @@ void BLE_Handler::setup_GATTS() {
 	auto ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
 	ESP_ERROR_CHECK(ret);
 
-	ret = esp_bluedroid_init();
-	ESP_ERROR_CHECK(ret);
+//	ret = esp_bluedroid_init();
+//	ESP_ERROR_CHECK(ret);
 
 	ret = esp_bluedroid_enable();
 	ESP_ERROR_CHECK(ret);
@@ -264,10 +272,11 @@ void BLE_Handler::disable() {
 	stop_advertising();
 
 	puts("BT: Disabling controller");
+	esp_err_t ret;
 //	auto ret = esp_bluedroid_disable();
 //	ESP_ERROR_CHECK(ret);
 
-	auto ret = esp_bt_controller_disable();
+	ret = esp_bt_controller_disable();
 	ESP_ERROR_CHECK(ret);
 
 	while(esp_bt_controller_get_status() == ESP_BT_CONTROLLER_STATUS_ENABLED)
