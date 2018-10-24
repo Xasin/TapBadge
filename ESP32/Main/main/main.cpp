@@ -11,36 +11,20 @@
 #include "driver/gpio.h"
 #include "driver/rtc_io.h"
 
-#include "driver/ledc.h"
-#include "driver/touch_pad.h"
-
-#include "Control.h"
-#include "MorseHandle.h"
-
-#include "NeoController.h"
-#include "NotifyHandler.h"
-
-#include "BLEHandler.h"
-
-#include "peripheral/batman.h"
-
 #include <string.h>
 
-using namespace Peripheral;
+#include "esp_bt.h"
+#include "esp_bt_main.h"
+#include "esp_bt_defs.h"
+#include "esp_bt_device.h"
 
-Peripheral::BLE_Handler *ble_handler;
+#include "esp_gap_ble_api.h"
+#include "esp_gatts_api.h"
+
 
 esp_err_t event_handler(void *ctx, system_event_t *event)
 {
     return ESP_OK;
-}
-
-void setup_bt() {
-    ble_handler = new Peripheral::BLE_Handler("Tap Badge");
-
-    ble_handler->set_GAP_param(ble_handler->get_GAP_defaults());
-
-    vTaskDelay(10);
 }
 
 extern "C" void app_main(void)
@@ -53,39 +37,68 @@ extern "C" void app_main(void)
 
     esp_pm_config_esp32_t power_config = {};
     power_config.max_freq_mhz = 80;
-	power_config.min_freq_mhz = 20;
+	power_config.min_freq_mhz = 80;
 	//power_config.light_sleep_enable = true;
     esp_pm_configure(&power_config);
 
-    setup_bt();
+    //setup_bt();
 
-    uint32_t colors[] = {Material::RED, Material::PINK, Material::PURPLE, Material::DEEP_PURPLE, Material::INDIGO,
-							 Material::BLUE, Material::CYAN, Material::GREEN, Material::LIME, Material::YELLOW, Material::AMBER, Material::ORANGE, Material::DEEP_ORANGE};
+	esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
 
-    NotifyHandler::PatternElement xasinPattern[] = {
-    		{Color(Material::RED, 80), 50000},
-			{Color(Material::RED, 30), 60000},
-			{Color(Material::CYAN, 100), 60000},
-			{0, 500000}};
+	esp_bt_controller_init(&bt_cfg);
+    esp_bt_controller_enable(ESP_BT_MODE_BLE);
 
-    NotifyHandler::PatternElement neiraPattern[] = {
-    		{Color(Material::YELLOW, 80), 100000},
-			{Color(Material::BLUE,   40), 100000},
-			{Color(Material::YELLOW, 120), 100000},
-    		{0, 500000}};
+    esp_bluedroid_init();
+    esp_bluedroid_enable();
 
-    NotifyHandler::PatternElement meshPattern[] = {
-    		{Color(Material::GREEN, 70), 60000},
-			{Color(Material::PURPLE, 120), 50000},
-			{0,  50000},
-			{Color(Material::PURPLE, 120), 50000},
-			{0, 500000}};
+	esp_ble_adv_data_t o = {};
+	o.set_scan_rsp = false;
+	o.include_name = true;
+	o.include_txpower = true;
+	o.min_interval =  100 / 1.25;
+	o.max_interval =  100 / 1.25;
+	o.appearance   = 6<<6;
+	o.flag = (ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT);
+
+	esp_ble_gap_config_adv_data(&o);
+
+    esp_ble_gatts_app_register(1);
+
+    esp_ble_adv_params_t params = {};
+	params.adv_int_min = o.min_interval*2;
+	params.adv_int_max = o.max_interval*2;
+
+	params.adv_type = ADV_TYPE_IND;
+
+	params.own_addr_type = BLE_ADDR_TYPE_PUBLIC;
+	params.channel_map = ADV_CHNL_ALL;
+	params.adv_filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY;
+
+	vTaskDelay(100);
+
+	esp_ble_gap_set_device_name("ESP TEST");
+
+	ESP_ERROR_CHECK(esp_ble_gap_start_advertising(&params));
+
+	esp_ble_gap_set_device_name("ESP TEST");
+
+	puts("Connect now - then disconnect.");
+
+	vTaskDelay(20000);
 
     while(true) {
-		ble_handler->start_advertising();
+		puts("Stopping BT");
+		esp_ble_gap_stop_advertising();
+		vTaskDelay(1);
+
+		esp_bt_controller_disable();
+    	vTaskDelay(5000);
+
+		puts("Starting BT");
+		esp_bt_controller_enable(ESP_BT_MODE_BLE);
+		vTaskDelay(1);
+		esp_ble_gap_start_advertising(&params);
 		vTaskDelay(20000);
-		ble_handler->disable();
-		vTaskDelay(5000);
     }
 }
 
