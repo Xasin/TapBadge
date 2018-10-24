@@ -53,53 +53,33 @@ BLE_Handler::BLE_Handler(const char *name) :
 
 void BLE_Handler::process_GAP(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
 	switch(event) {
-	case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
-		puts("GAP: Adv data set");
-	break;
 	case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
-		puts("GAP: Adv started");
 		if(BT_status == IDLE)
 			BT_status = ADVERTISING;
 	break;
-
-	case ESP_GAP_BLE_AUTH_CMPL_EVT:
-		puts("GAP: Authentication completed.");
-	break;
 	case ESP_GAP_BLE_SEC_REQ_EVT:
-		puts("GAP: security requested.");
 		esp_ble_gap_security_rsp(param->ble_security.ble_req.bd_addr, false);
 	break;
-	case ESP_GAP_BLE_PASSKEY_NOTIF_EVT:
-		printf("GAP: security passkey is: %d (TODO callback)\n", param->ble_security.key_notif.passkey);
-	break;
-	case ESP_GAP_BLE_NC_REQ_EVT:
-		puts("GAP: numerical comparison requested.");
-	break;
 	case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
-		puts("GAP: Adv stopped");
+
 		if(BT_status == ADVERTISING)
 			BT_status = IDLE;
 	break;
-	case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
-		puts("GAP: Update conn params.");
-	break;
-	case ESP_GAP_BLE_KEY_EVT:
-	break;
 	default:
-		printf("Unknown GAP: %d\n", (uint32_t)event);
+	break;
 	}
 }
 void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface, esp_ble_gatts_cb_param_t *param) {
 	switch(event) {
 	case ESP_GATTS_REG_EVT:
-		printf("GATT: IF %d\n", iface);
+
 		GATT_if = iface;
 		for(auto s: services)
 			register_service(s);
 	break;
 	case ESP_GATTS_READ_EVT: {
 		auto data = param->read;
-		printf("GATT: Read requested for handle %d\n", data.handle);
+
 
 		for(auto s: services) {
 			for(auto c: s->characteristics) {
@@ -110,13 +90,13 @@ void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 			}
 		}
 
-		puts("GATT: No matching read handle found!");
+
 		esp_ble_gatts_send_response(GATT_if, data.conn_id, data.trans_id, ESP_GATT_INVALID_HANDLE, nullptr);
 		break;
 	}
 	case ESP_GATTS_WRITE_EVT: {
 		auto data = param->write;
-		printf("GATT: Write requested for handle: %d\n", data.handle);
+
 
 		for(auto s: services) {
 			for(auto c: s->characteristics) {
@@ -126,17 +106,17 @@ void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 				}
 			}
 		}
-		puts("GATT: No matching write handle found!");
+
 		esp_ble_gatts_send_response(GATT_if, data.conn_id, data.trans_id, ESP_GATT_INVALID_HANDLE, nullptr);
 	}
 	break;
 	case ESP_GATTS_CREATE_EVT:
-		printf("GATT: Service UUID: 0x%X; handle is: %d\n", param->create.service_id.id.uuid.uuid.uuid32, param->create.service_handle);
+
 		services[param->create.service_id.id.inst_id]->set_handle(param->create.service_handle);
 	break;
 	case ESP_GATTS_ADD_CHAR_EVT: {
 		auto p = param->add_char;
-		printf("GATT: Characteristic UUID: 0x%X; Attribute Handle: %d; Service Handle: %d; Status: %d\n", p.char_uuid.uuid.uuid32, p.attr_handle, p.service_handle, p.status);
+
 		Bluetooth::Service *service = nullptr;
 		for(auto s: services)
 				if(s->handle == p.service_handle) {
@@ -147,7 +127,7 @@ void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 		for(auto c: service->characteristics)
 			if(c->is_uuid(p.char_uuid)) {
 				c->attr_handle = p.attr_handle;
-				printf("Wrote attribute handle!\n");
+
 				break;
 			}
 		break;
@@ -156,7 +136,7 @@ void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 	break;
 	case ESP_GATTS_CONNECT_EVT:
 		BT_status = CONNECTED;
-		puts("GATT: Client connected");
+
 
 		this->stop_advertising();
 
@@ -166,12 +146,10 @@ void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 	break;
 	case ESP_GATTS_DISCONNECT_EVT:
 		BT_status = IDLE;
-
-		puts("GATT: Client disconnected");
 		this->start_advertising();
 	break;
 	default:
-		printf("GATT: Unknown event: %d\n", (uint32_t)event);
+		break;
 	}
 }
 

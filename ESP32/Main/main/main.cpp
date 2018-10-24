@@ -28,74 +28,16 @@
 
 using namespace Peripheral;
 
-Peripheral::NeoController rgb  = Peripheral::NeoController(GPIO_NUM_5, RMT_CHANNEL_0, 1);
-Peripheral::NotifyHandler note = Peripheral::NotifyHandler(&rgb);
-
-Peripheral::MorseHandle morse = Peripheral::MorseHandle(120);
-Touch::Control *testPad;
-
-Peripheral::Batman *battery;
-
 Peripheral::BLE_Handler *ble_handler;
-
-uint16_t batLvl;
 
 esp_err_t event_handler(void *ctx, system_event_t *event)
 {
     return ESP_OK;
 }
 
-void testTask(void * params) {
-	vTaskDelay(500/portTICK_PERIOD_MS);
-	NotifyHandler::PatternElement testPattern[] = {
-			{Material::RED, 500000},
-			{Material::RED, 500000},
-			{Material::GREEN, 200000},
-			{Material::GREEN, 500000},
-			{Material::BLUE,  200000},
-			{Material::BLUE, 500000},
-			{0, 500000}
-	};
-
-	while(true) {
-		for(uint8_t i=40; i!=0; i--) {
-	    	printf("Bat. lvl: %4d | Touch: %1d\n", batLvl = battery->read(), testPad->read_raw());
-	    	vTaskDelay(3000);
-		}
-		//vTaskDelay(120000 / portTICK_PERIOD_MS);
-		note.flash(testPattern, 7);
-	}
-}
-
 void setup_bt() {
     ble_handler = new Peripheral::BLE_Handler("Tap Badge");
-    auto tService = new Peripheral::Bluetooth::Service(ble_handler);
-    tService->set_uuid16(0x180F);
 
-    auto tChar = new Peripheral::Bluetooth::Characteristic(tService);
-    tChar->set_uuid16(0x2A19);
-    tChar->can_write(true);
-
-    tChar->write_cb = [](Peripheral::Bluetooth::Characteristic::write_dataset data) {
-    	rgb.fill(0xFFFFFF);
-    	rgb.apply();
-    	rgb.update();
-    };
-
-    auto tChar2 = new Peripheral::Bluetooth::Characteristic(tService);
-
-    tChar2->set_uuid32(0x1234);
-    tChar2->value.attr_len = 2;
-    tChar2->value.attr_max_len = 2;
-    batLvl = 0x1337;
-    tChar2->value.attr_value = reinterpret_cast<uint8_t *>(&batLvl);
-
-    tService->set_primary(true);
-
-    tService->add_char(tChar);
-    tService->add_char(tChar2);
-
-    ble_handler->add_service(tService);
     ble_handler->set_GAP_param(ble_handler->get_GAP_defaults());
 
     vTaskDelay(10);
@@ -117,45 +59,8 @@ extern "C" void app_main(void)
 
     setup_bt();
 
-    TaskHandle_t xHandle = NULL;
-    xTaskCreate(testTask, "TTask", 2048, NULL, 2, &xHandle);
-
-    testPad = new Touch::Control(TOUCH_PAD_NUM0);
-    testPad->charDetectHandle = morse.getDecodeHandle();
-
-    battery = new Peripheral::Batman(ADC2_GPIO2_CHANNEL);
-
-
     uint32_t colors[] = {Material::RED, Material::PINK, Material::PURPLE, Material::DEEP_PURPLE, Material::INDIGO,
 							 Material::BLUE, Material::CYAN, Material::GREEN, Material::LIME, Material::YELLOW, Material::AMBER, Material::ORANGE, Material::DEEP_ORANGE};
-
-    for(uint8_t i=0; i<12; i++) {
-		rgb.fill(colors[i]);
-		rgb.fadeTransition(100000);
-		vTaskDelay(200/portTICK_PERIOD_MS);
-    }
-    rgb.clear();
-
-    morse.word_callback = [](std::string &word) {
-    	if(word == "!off") {
-    		rgb.fill(0); rgb.apply(); rgb.update();
-    		esp_deep_sleep_start();
-    	}
-
-    	if(word == "red")
-    		rgb.fill(Material::RED);
-    	else if(word == "blue")
-    		rgb.fill(Material::BLUE);
-    	else if(word == "green")
-    		rgb.fill(Material::GREEN);
-    	else if(word == "off")
-    		rgb.fill(0);
-    	else
-    		return;
-
-    	rgb.apply();
-    	rgb.update();
-    };
 
     NotifyHandler::PatternElement xasinPattern[] = {
     		{Color(Material::RED, 80), 50000},
@@ -178,28 +83,9 @@ extern "C" void app_main(void)
 
     while(true) {
 		ble_handler->start_advertising();
-		rgb.fill(Color(Material::PURPLE, 70)); rgb.apply(); rgb.update();
 		vTaskDelay(20000);
 		ble_handler->disable();
-		rgb.fill(Color(Material::AMBER, 80)); rgb.apply(); rgb.update();
 		vTaskDelay(5000);
-    }
-
-    while (true) {
-    	batLvl = battery->read();
-    	//tChar.testData = batLvl / 42;
-
-    	note.flash(xasinPattern, 4);
-
-    	vTaskDelay(3000 / portTICK_PERIOD_MS);
-
-    	note.flash(neiraPattern, 4);
-
-    	vTaskDelay(3000);
-
-    	note.flash(meshPattern, 5);
-
-    	vTaskDelay(3000);
     }
 }
 
