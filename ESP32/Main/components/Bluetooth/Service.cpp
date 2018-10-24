@@ -34,6 +34,8 @@ void Service::set_handle(uint16_t newHandle) {
 Service::Service(BLE_Handler * handler) :
 		characteristics(0), handler(handler),
 		handle(0) {
+
+	set_primary(true);
 }
 
 void Service::set_primary(bool primary) {

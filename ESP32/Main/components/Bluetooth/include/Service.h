@@ -47,8 +47,6 @@ public:
 	void set_uuid32(uint32_t uuid);
 
 	void add_char(Characteristic * newChar);
-
-	void install();
 };
 
 } /* namespace Bluetooth */
