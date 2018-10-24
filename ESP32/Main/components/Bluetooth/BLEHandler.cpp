@@ -29,7 +29,7 @@ void BLE_Handler::register_service(Service *service) {
 }
 
 BLE_Handler::BLE_Handler(const char *name) :
-		BT_status(UNINITIALIZED),
+		BT_status(UNINITIALIZED), BT_status_target(UNINITIALIZED),
 		connected_device(), connection_id(0),
 		GAP_param(), GAP_param_rsp(), GATT_if(0),
 		services(0), name(name) {
@@ -150,7 +150,7 @@ void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 		BT_status = CONNECTED;
 		puts("GATT: Client connected");
 
-		this->stop_advertising();
+		esp_ble_gap_stop_advertising();
 
 		memcpy(connected_device, param->connect.remote_bda, ESP_BD_ADDR_LEN);
 		connection_id = param->connect.conn_id;
@@ -160,7 +160,8 @@ void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 		BT_status = IDLE;
 
 		puts("GATT: Client disconnected");
-		this->start_advertising();
+		if(BT_status_target == ADVERTISING)
+			this->start_advertising();
 	break;
 	default:
 		printf("GATT: Unknown event: %d\n", (uint32_t)event);
@@ -199,6 +200,8 @@ void BLE_Handler::add_service(Service * newService) {
 void BLE_Handler::setup_GATTS() {
 	if(BT_status != UNINITIALIZED)
 		return;
+
+	BT_status_target = IDLE;
 
 	puts("BT: First initialisation");
 
@@ -241,6 +244,8 @@ void BLE_Handler::enable() {
 	if(BT_status != DISABLED)
 		return;
 
+	BT_status_target = IDLE;
+
 	puts("BT: Re-Enabling controller");
 
 	BT_status = STARTING;
@@ -260,6 +265,8 @@ void BLE_Handler::disable() {
 	if(BT_status == DISABLED)
 		return;
 
+	BT_status_target = DISABLED;
+
 	disconnect();
 	stop_advertising();
 
@@ -277,14 +284,14 @@ void BLE_Handler::disable() {
 }
 
 void BLE_Handler::disconnect() {
-	return;
-
 	if(BT_status == CONNECTED) {
 		puts("BT: Disconnecting");
 		esp_ble_gatts_close(GATT_if, connection_id);
 
 		while(BT_status == CONNECTED)
 			vTaskDelay(1);
+
+		vTaskDelay(100);
 	}
 }
 
@@ -292,6 +299,8 @@ void BLE_Handler::start_advertising() {
 	enable();
 	if(BT_status == ADVERTISING)
 		return;
+
+	BT_status_target = ADVERTISING;
 
 	puts("BT: Start advertising");
 
@@ -315,6 +324,8 @@ void BLE_Handler::start_advertising() {
 }
 void BLE_Handler::stop_advertising() {
 	if(BT_status == ADVERTISING) {
+		BT_status_target = IDLE;
+
 		puts("BT: Stop advertising");
 		esp_ble_gap_stop_advertising();
 		while(BT_status == ADVERTISING)
