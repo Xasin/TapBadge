@@ -32,6 +32,9 @@ Peripheral::NeoController rgb  = Peripheral::NeoController(GPIO_NUM_5, RMT_CHANN
 Peripheral::NotifyHandler note = Peripheral::NotifyHandler(&rgb);
 
 Peripheral::MorseHandle morse = Peripheral::MorseHandle(120);
+Touch::Control *testPad;
+
+Peripheral::Batman *battery;
 
 Peripheral::BLE_Handler *ble_handler;
 
@@ -55,7 +58,11 @@ void testTask(void * params) {
 	};
 
 	while(true) {
-		vTaskDelay(120000 / portTICK_PERIOD_MS);
+		for(uint8_t i=40; i!=0; i--) {
+	    	printf("Bat. lvl: %4d | Touch: %1d\n", batLvl = battery->read(), testPad->read_raw());
+	    	vTaskDelay(3000);
+		}
+		//vTaskDelay(120000 / portTICK_PERIOD_MS);
 		note.flash(testPattern, 7);
 	}
 }
@@ -113,10 +120,10 @@ extern "C" void app_main(void)
     TaskHandle_t xHandle = NULL;
     xTaskCreate(testTask, "TTask", 2048, NULL, 2, &xHandle);
 
-    Touch::Control testPad = Touch::Control(TOUCH_PAD_NUM0);
-    testPad.charDetectHandle = morse.getDecodeHandle();
+    testPad = new Touch::Control(TOUCH_PAD_NUM0);
+    testPad->charDetectHandle = morse.getDecodeHandle();
 
-    Peripheral::Batman battery = Peripheral::Batman(ADC2_GPIO2_CHANNEL);
+    battery = new Peripheral::Batman(ADC2_GPIO2_CHANNEL);
 
 
     uint32_t colors[] = {Material::RED, Material::PINK, Material::PURPLE, Material::DEEP_PURPLE, Material::INDIGO,
@@ -179,16 +186,12 @@ extern "C" void app_main(void)
     }
 
     while (true) {
-    	batLvl = battery.read();
+    	batLvl = battery->read();
     	//tChar.testData = batLvl / 42;
 
-    	printf("Bat. lvl: %4d | Touch: %1d\n", batLvl, testPad.read_raw());
-
-    	ble_handler->start_advertising();
     	note.flash(xasinPattern, 4);
 
     	vTaskDelay(3000 / portTICK_PERIOD_MS);
-    	ble_handler->disable();
 
     	note.flash(neiraPattern, 4);
 

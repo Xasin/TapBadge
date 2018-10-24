@@ -36,7 +36,7 @@ Control::Control(touch_pad_t padNo) : padNo(padNo), charDetectHandle(nullptr) {
 	}, this);
 	touch_pad_intr_enable();
 
-	touch_pad_set_meas_time(0x1F00, 0x07ff);
+	touch_pad_set_meas_time(0x1F00, 0x07FF);
 }
 
 uint16_t Control::read_raw() {
