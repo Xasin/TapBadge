@@ -22,6 +22,8 @@
 
 #include "BLEHandler.h"
 
+#include "services/BatteryService.h"
+
 #include "peripheral/batman.h"
 
 #include <string.h>
@@ -34,6 +36,7 @@ Peripheral::NotifyHandler note = Peripheral::NotifyHandler(&rgb);
 Peripheral::MorseHandle morse = Peripheral::MorseHandle(120);
 
 Peripheral::BLE_Handler *ble_handler;
+Peripheral::Bluetooth::BatteryService *batteryC;
 
 uint16_t batLvl;
 
@@ -62,33 +65,8 @@ void testTask(void * params) {
 
 void setup_bt() {
     ble_handler = new Peripheral::BLE_Handler("Tap Badge");
-    auto tService = new Peripheral::Bluetooth::Service(ble_handler);
-    tService->set_uuid16(0x180F);
+    batteryC = new Peripheral::Bluetooth::BatteryService(ble_handler, 3650, 4150);
 
-    auto tChar = new Peripheral::Bluetooth::Characteristic(tService);
-    tChar->set_uuid16(0x2A19);
-    tChar->can_write(true);
-
-    tChar->write_cb = [](Peripheral::Bluetooth::Characteristic::write_dataset data) {
-    	rgb.fill(0xFFFFFF);
-    	rgb.apply();
-    	rgb.update();
-    };
-
-    auto tChar2 = new Peripheral::Bluetooth::Characteristic(tService);
-
-    tChar2->set_uuid32(0x1234);
-    tChar2->value.attr_len = 2;
-    tChar2->value.attr_max_len = 2;
-    batLvl = 0x1337;
-    tChar2->value.attr_value = reinterpret_cast<uint8_t *>(&batLvl);
-
-    tService->set_primary(true);
-
-    tService->add_char(tChar);
-    tService->add_char(tChar2);
-
-    ble_handler->add_service(tService);
     ble_handler->set_GAP_param(ble_handler->get_GAP_defaults());
 
     vTaskDelay(10);
@@ -105,7 +83,7 @@ extern "C" void app_main(void)
     esp_pm_config_esp32_t power_config = {};
     power_config.max_freq_mhz = 80;
 	power_config.min_freq_mhz = 20;
-	//power_config.light_sleep_enable = true;
+	power_config.light_sleep_enable = true;
     esp_pm_configure(&power_config);
 
     setup_bt();
@@ -132,6 +110,9 @@ extern "C" void app_main(void)
     morse.word_callback = [](std::string &word) {
     	if(word == "!off") {
     		rgb.fill(0); rgb.apply(); rgb.update();
+    		ble_handler->disable();
+
+    		esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
     		esp_deep_sleep_start();
     	}
 
@@ -180,6 +161,8 @@ extern "C" void app_main(void)
 
     while (true) {
     	batLvl = battery.read();
+    	batteryC->setBatLevel(batLvl);
+
     	//tChar.testData = batLvl / 42;
 
     	printf("Bat. lvl: %4d | Touch: %1d\n", batLvl, testPad.read_raw());
