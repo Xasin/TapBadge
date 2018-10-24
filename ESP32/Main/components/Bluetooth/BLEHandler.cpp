@@ -154,7 +154,7 @@ void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 
 		memcpy(connected_device, param->connect.remote_bda, ESP_BD_ADDR_LEN);
 		connection_id = param->connect.conn_id;
-		esp_ble_set_encryption(connected_device, ESP_BLE_SEC_ENCRYPT);
+		//esp_ble_set_encryption(connected_device, ESP_BLE_SEC_ENCRYPT);
 	break;
 	case ESP_GATTS_DISCONNECT_EVT:
 		BT_status = IDLE;
@@ -216,8 +216,8 @@ void BLE_Handler::setup_GATTS() {
 	ret = esp_ble_gatts_register_callback(BLE_Handler::GATTs_Callback);
 	ESP_ERROR_CHECK(ret);
 
-	auto authen_mode = ESP_LE_AUTH_NO_BOND;
-	esp_ble_gap_set_security_param(ESP_BLE_SM_AUTHEN_REQ_MODE, &authen_mode, 1);
+//	auto authen_mode = ESP_LE_AUTH_NO_BOND;
+//	esp_ble_gap_set_security_param(ESP_BLE_SM_AUTHEN_REQ_MODE, &authen_mode, 1);
 	auto io_mode = ESP_IO_CAP_NONE;
 	esp_ble_gap_set_security_param(ESP_BLE_SM_IOCAP_MODE, &io_mode, 1);
 
