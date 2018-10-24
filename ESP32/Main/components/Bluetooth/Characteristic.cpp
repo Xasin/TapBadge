@@ -52,11 +52,9 @@ Characteristic::Characteristic(Service * service) :
 
 	autoResp.auto_rsp = 0;
 
-	testData = 69;
-
-	value.attr_len = 1;
-	value.attr_max_len = 1;
-	value.attr_value = &testData;
+	value.attr_len = 0;
+	value.attr_max_len = 0;
+	value.attr_value = nullptr;
 }
 
 void Characteristic::set_uuid16(uint16_t uuid) {
@@ -68,6 +66,15 @@ void Characteristic::set_uuid32(uint32_t uuid) {
 	id.uuid.uuid32 = uuid;
 }
 
+void Characteristic::set_value(void *data, uint8_t len, uint8_t max_len) {
+	value.attr_len = len;
+	value.attr_max_len = max_len;
+	value.attr_value = reinterpret_cast<uint8_t *>(data);
+}
+void Characteristic::set_value(void *data, uint8_t len) {
+	value.attr_len = len;
+	value.attr_value = reinterpret_cast<uint8_t *>(data);
+}
 
 void Characteristic::can_read(bool val) {
 	if(val) {
