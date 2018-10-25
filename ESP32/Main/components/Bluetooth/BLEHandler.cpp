@@ -29,7 +29,7 @@ void BLE_Handler::register_service(Service *service) {
 }
 
 BLE_Handler::BLE_Handler(const char *name) :
-		BT_status(UNINITIALIZED),
+		BT_status(UNINITIALIZED), BT_status_target(UNINITIALIZED),
 		connected_device(), connection_id(0),
 		GAP_param(), GAP_param_rsp(), GATT_if(0),
 		services(0), name(name) {
@@ -158,17 +158,18 @@ void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 		BT_status = CONNECTED;
 		puts("GATT: Client connected");
 
-		this->stop_advertising();
+		esp_ble_gap_stop_advertising();
 
 		memcpy(connected_device, param->connect.remote_bda, ESP_BD_ADDR_LEN);
 		connection_id = param->connect.conn_id;
-		esp_ble_set_encryption(connected_device, ESP_BLE_SEC_ENCRYPT);
+		//esp_ble_set_encryption(connected_device, ESP_BLE_SEC_ENCRYPT);
 	break;
 	case ESP_GATTS_DISCONNECT_EVT:
 		BT_status = IDLE;
 
 		puts("GATT: Client disconnected");
-		this->start_advertising();
+		if(BT_status_target == ADVERTISING)
+			this->start_advertising();
 	break;
 	default:
 		printf("GATT: Unknown event: %d\n", (uint32_t)event);
@@ -208,6 +209,8 @@ void BLE_Handler::setup_GATTS() {
 	if(BT_status != UNINITIALIZED)
 		return;
 
+	BT_status_target = IDLE;
+
 	puts("BT: First initialisation");
 
 	auto ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
@@ -224,8 +227,8 @@ void BLE_Handler::setup_GATTS() {
 	ret = esp_ble_gatts_register_callback(BLE_Handler::GATTs_Callback);
 	ESP_ERROR_CHECK(ret);
 
-	auto authen_mode = ESP_LE_AUTH_NO_BOND;
-	esp_ble_gap_set_security_param(ESP_BLE_SM_AUTHEN_REQ_MODE, &authen_mode, 1);
+//	auto authen_mode = ESP_LE_AUTH_NO_BOND;
+//	esp_ble_gap_set_security_param(ESP_BLE_SM_AUTHEN_REQ_MODE, &authen_mode, 1);
 	auto io_mode = ESP_IO_CAP_NONE;
 	esp_ble_gap_set_security_param(ESP_BLE_SM_IOCAP_MODE, &io_mode, 1);
 
@@ -249,6 +252,8 @@ void BLE_Handler::enable() {
 	if(BT_status != DISABLED)
 		return;
 
+	BT_status_target = IDLE;
+
 	puts("BT: Re-Enabling controller");
 
 	BT_status = STARTING;
@@ -268,6 +273,8 @@ void BLE_Handler::disable() {
 	if(BT_status == DISABLED)
 		return;
 
+	BT_status_target = DISABLED;
+
 	disconnect();
 	stop_advertising();
 
@@ -286,14 +293,14 @@ void BLE_Handler::disable() {
 }
 
 void BLE_Handler::disconnect() {
-	return;
-
 	if(BT_status == CONNECTED) {
 		puts("BT: Disconnecting");
 		esp_ble_gatts_close(GATT_if, connection_id);
 
 		while(BT_status == CONNECTED)
 			vTaskDelay(1);
+
+		vTaskDelay(100);
 	}
 }
 
@@ -301,6 +308,8 @@ void BLE_Handler::start_advertising() {
 	enable();
 	if(BT_status == ADVERTISING)
 		return;
+
+	BT_status_target = ADVERTISING;
 
 	puts("BT: Start advertising");
 
@@ -324,6 +333,8 @@ void BLE_Handler::start_advertising() {
 }
 void BLE_Handler::stop_advertising() {
 	if(BT_status == ADVERTISING) {
+		BT_status_target = IDLE;
+
 		puts("BT: Stop advertising");
 		esp_ble_gap_stop_advertising();
 		while(BT_status == ADVERTISING)

@@ -45,14 +45,15 @@ public:
 
 	esp_attr_value_t 		value;
 
-	uint8_t testData;
-
 	std::function<void (write_dataset)> write_cb;
 
 	Characteristic(Service * headService);
 
 	void set_uuid16(uint16_t uuid);
 	void set_uuid32(uint32_t uuid);
+
+	void set_value(void *data, uint8_t len, uint8_t max_len);
+	void set_value(void *data, uint8_t len);
 
 	void can_read(bool val);
 	void can_write(bool val);
