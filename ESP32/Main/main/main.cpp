@@ -51,13 +51,13 @@ esp_err_t event_handler(void *ctx, system_event_t *event)
 void testTask(void * params) {
 	vTaskDelay(500/portTICK_PERIOD_MS);
 	NotifyHandler::PatternElement testPattern[] = {
-			{Material::RED, 500000},
-			{Material::RED, 500000},
-			{Material::GREEN, 200000},
-			{Material::GREEN, 500000},
-			{Material::BLUE,  200000},
-			{Material::BLUE, 500000},
-			{0, 500000}
+			{Material::RED, 50000},
+			{Material::RED, 50000},
+			{Material::GREEN, 20000},
+			{Material::GREEN, 50000},
+			{Material::BLUE,  20000},
+			{Material::BLUE, 50000},
+			{0, 50000}
 	};
 
 	while(true) {
@@ -66,6 +66,7 @@ void testTask(void * params) {
 	    	vTaskDelay(3000);
 		}
 		//vTaskDelay(120000 / portTICK_PERIOD_MS);
+	    ble_handler->start_advertising(3000);
 		note.flash(testPattern, 7);
 	}
 }
@@ -113,8 +114,14 @@ extern "C" void app_main(void)
 		vTaskDelay(200/portTICK_PERIOD_MS);
     }
     rgb.clear();
+    rgb.apply();
 
-    morse.word_callback = [](std::string &word) {
+	esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+	esp_deep_sleep_start();
+
+    volatile uint8_t whoIs = 0;
+
+    morse.word_callback = [&whoIs](std::string &word) {
     	if(word == "!off") {
     		rgb.fill(0); rgb.apply(); rgb.update();
     		ble_handler->disable();
@@ -123,14 +130,17 @@ extern "C" void app_main(void)
     		esp_deep_sleep_start();
     	}
 
-    	if(word == "red")
-    		rgb.fill(Material::RED);
-    	else if(word == "blue")
-    		rgb.fill(Material::BLUE);
-    	else if(word == "green")
-    		rgb.fill(Material::GREEN);
+    	if(word == "!b")
+    		ble_handler->start_advertising(10000);
+
+    	if(word == "x")
+    		whoIs = 1;
+    	else if(word == "n")
+    		whoIs = 2;
+    	else if(word == "m")
+    		whoIs = 3;
     	else if(word == "off")
-    		rgb.fill(0);
+    		whoIs = 0;
     	else
     		return;
 
@@ -157,32 +167,24 @@ extern "C" void app_main(void)
 			{Color(Material::PURPLE, 120), 50000},
 			{0, 500000}};
 
-    while(true) {
-		ble_handler->start_advertising();
-		rgb.fill(Color(Material::PURPLE, 70)); rgb.apply(); rgb.update();
-		vTaskDelay(20000);
-		ble_handler->disable();
-		rgb.fill(Color(Material::AMBER, 80)); rgb.apply(); rgb.update();
-		vTaskDelay(5000);
-    }
-
     while (true) {
     	batLvl = battery->read();
     	batteryC->setBatLevel(batLvl);
 
-    	//tChar.testData = batLvl / 42;
+    	switch(whoIs) {
+    	case 1:
+    		note.flash(xasinPattern, 4);
+    		break;
+    	case 2:
+    		note.flash(neiraPattern, 4);
+    		break;
+    	case 3:
+    		note.flash(meshPattern, 5);
+    		break;
+    	default: break;
 
-    	note.flash(xasinPattern, 4);
-
+    	}
     	vTaskDelay(3000 / portTICK_PERIOD_MS);
-
-    	note.flash(neiraPattern, 4);
-
-    	vTaskDelay(3000);
-
-    	note.flash(meshPattern, 5);
-
-    	vTaskDelay(3000);
     }
 }
 
