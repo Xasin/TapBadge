@@ -11,6 +11,8 @@
 
 #include "driver/touch_pad.h"
 
+#include "soc/rtc.h"
+
 #ifndef CONTROL_H_
 #define CONTROL_H_
 
@@ -19,6 +21,10 @@ namespace Touch {
 class Control {
 private:
 	const touch_pad_t padNo;
+
+	uint64_t lastIntrTime;
+	uint8_t  debounceCnt;
+
 public:
 	TaskHandle_t charDetectHandle;
 
