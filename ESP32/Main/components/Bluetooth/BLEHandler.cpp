@@ -162,9 +162,10 @@ void BLE_Handler::power_task() {
 			else
 				BT_status = IDLE;
 		}
-		else if(BT_status == IDLE and BT_status_target == ADVERTISING)
+
+		if(BT_status == IDLE and BT_status_target == ADVERTISING)
 			start_advertising();
-		else if(BT_status == ADVERTISING and adv_stop_time <= xTaskGetTickCount())
+		else if(BT_status == ADVERTISING and adv_stop_time > 0 and adv_stop_time <= xTaskGetTickCount())
 			disable();
 	}
 }
@@ -333,14 +334,17 @@ void BLE_Handler::start_advertising(uint64_t disableAfter) {
 		BT_status_target = DISABLED;
 		adv_stop_time = xTaskGetTickCount() + disableAfter;
 	}
-	else
+	else {
 		BT_status_target = ADVERTISING;
+		adv_stop_time = 0;
+	}
 
 	if(BT_status != IDLE)
 		return;
 
 	puts("BT: Start advertising");
 
+	esp_ble_gap_set_device_name(name);
 	esp_ble_gap_config_adv_data(&GAP_param);
 	if(GAP_param_rsp.set_scan_rsp)
 		esp_ble_gap_config_adv_data(&GAP_param_rsp);
