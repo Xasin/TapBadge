@@ -66,14 +66,13 @@ void testTask(void * params) {
 	    	vTaskDelay(3000);
 		}
 		//vTaskDelay(120000 / portTICK_PERIOD_MS);
-	    ble_handler->start_advertising(3000);
 		note.flash(testPattern, 7);
 	}
 }
 
 void setup_bt() {
     ble_handler = new Peripheral::BLE_Handler("Tap Badge");
-    batteryC = new Peripheral::Bluetooth::BatteryService(ble_handler, 3650, 4150);
+    batteryC = new Peripheral::Bluetooth::BatteryService(ble_handler, 3650, 4000);
 
     ble_handler->set_GAP_param(ble_handler->get_GAP_defaults());
 
@@ -90,7 +89,7 @@ extern "C" void app_main(void)
 
     esp_pm_config_esp32_t power_config = {};
     power_config.max_freq_mhz = 80;
-	power_config.min_freq_mhz = 20;
+	power_config.min_freq_mhz = 80;
 	power_config.light_sleep_enable = true;
     esp_pm_configure(&power_config);
 
@@ -100,7 +99,7 @@ extern "C" void app_main(void)
     xTaskCreate(testTask, "TTask", 2048, NULL, 2, &xHandle);
 
     testPad = new Touch::Control(TOUCH_PAD_NUM0);
-    testPad->charDetectHandle = morse.getDecodeHandle();
+   testPad->charDetectHandle = morse.getDecodeHandle();
 
     battery = new Peripheral::Batman(ADC2_GPIO2_CHANNEL);
 
@@ -115,9 +114,6 @@ extern "C" void app_main(void)
     }
     rgb.clear();
     rgb.apply();
-
-	esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
-	esp_deep_sleep_start();
 
     volatile uint8_t whoIs = 0;
 
@@ -166,6 +162,8 @@ extern "C" void app_main(void)
 			{0,  50000},
 			{Color(Material::PURPLE, 120), 50000},
 			{0, 500000}};
+
+    ble_handler->start_advertising();
 
     while (true) {
     	batLvl = battery->read();
