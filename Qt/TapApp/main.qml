@@ -14,15 +14,6 @@ ApplicationWindow {
 	height: 480
 	title: qsTr("Scroll")
 
-
-	Timer {
-		interval: 10000
-		onTriggered: tapBadge.startConnecting();
-
-		running: true;
-		repeat:  true;
-	}
-
 	ScrollView {
 		anchors.fill: parent
 
@@ -33,7 +24,27 @@ ApplicationWindow {
 				Layout.fillWidth: true
 				Layout.preferredHeight: width;
 
-				onClicked: tapBadge.startConnecting();
+				onClicked: {
+					reconTimer.restart();
+				}
+			}
+
+			ProgressBar {
+				id: reconTimerBar
+				Layout.fillWidth: true
+
+				NumberAnimation on value {
+					id: reconTimerBarCountdown
+					duration: reconTimer.interval
+					easing.type: Easing.Linear
+					from: 1
+					to:   0
+				}
+
+				Connections {
+					target: tapBadge.ble_handler
+
+				}
 			}
 		}
 	}
