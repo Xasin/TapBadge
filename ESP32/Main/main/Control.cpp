@@ -39,7 +39,7 @@ Control::Control(touch_pad_t padNo) : padNo(padNo), charDetectHandle(nullptr) {
 
 	touch_pad_set_voltage(TOUCH_HVOLT_2V7, TOUCH_LVOLT_0V5, TOUCH_HVOLT_ATTEN_1V);
 
-	touch_pad_config(padNo, 13);
+	touch_pad_config(padNo, 0x25);
 	touch_pad_io_init(padNo);
 
 	touch_pad_isr_register([](void *args) {
@@ -47,7 +47,7 @@ Control::Control(touch_pad_t padNo) : padNo(padNo), charDetectHandle(nullptr) {
 	}, this);
 	touch_pad_intr_enable();
 
-	touch_pad_set_meas_time(rtc_clk_slow_freq_get_hz()/200, 0x01FF);
+	touch_pad_set_meas_time(rtc_clk_slow_freq_get_hz()/200, 0x04FF);
 }
 
 uint16_t Control::read_raw() {
