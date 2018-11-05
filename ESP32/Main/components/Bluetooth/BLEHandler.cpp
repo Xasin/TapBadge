@@ -132,6 +132,8 @@ void BLE_Handler::process_GATTs(esp_gatts_cb_event_t event, esp_gatt_if_t iface,
 		memcpy(connected_device, param->connect.remote_bda, ESP_BD_ADDR_LEN);
 		connection_id = param->connect.conn_id;
 
+		client_connection_time = xTaskGetTickCount();
+
 		esp_ble_gap_stop_advertising();
 		set_BT_status(CONNECTED);
 	break;
@@ -182,7 +184,8 @@ BLE_Handler::BLE_Handler(const char *name) :
 		adv_stop_time(0),
 		connected_device(), connection_id(0),
 		GAP_param(), GAP_param_rsp(), GATT_if(0),
-		services(0), name(name) {
+		services(0), name(name),
+		client_connection_time(0) {
 	assert(masterHandler == nullptr);
 	masterHandler = this;
 

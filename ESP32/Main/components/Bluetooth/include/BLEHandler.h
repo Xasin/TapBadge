@@ -77,6 +77,8 @@ protected:
 	void register_service(Service *service);
 
 public:
+	uint64_t client_connection_time;
+
 	void power_task();
 
 	BLE_Handler(const char *name);

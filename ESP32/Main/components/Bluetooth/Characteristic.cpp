@@ -23,7 +23,7 @@ void Characteristic::read_reply(esp_ble_gatts_cb_param_t::gatts_read_evt_param r
 	rspData->offset	 = 0;
 
 	for(uint16_t i=0; i<rspData->len; i++)
-		rspData->value[i] = value.attr_value[value.attr_len -1 -i];
+		rspData->value[i] = value.attr_value[i];//[value.attr_len -1 -i];
 
 	esp_ble_gatts_send_response(service->handler->GATT_if, readEvent.conn_id, readEvent.trans_id, ESP_GATT_OK, &response);
 }
