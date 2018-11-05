@@ -3,27 +3,17 @@
 
 #include <QObject>
 
-#include <QtBluetooth/QtBluetooth>
-#include <QtBluetooth/QBluetoothDeviceInfo>
+#include "ble_handler.h"
 
 class Tap_BLE : public QObject
 {
 	Q_OBJECT
+
+	Q_PROPERTY(BLE_Handler *ble_handler READ getHandler)
+
 private:
-	QBluetoothDeviceDiscoveryAgent	ble_discoveryAgent;
-	QLowEnergyController					*ble_device;
 
-	QTimer disconnectTimer;
-
-	QString targetName;
-
-	enum {
-		SEARCHING,
-		CONNECTING,
-		CONNECTED,
-		IDLE,
-		FAILED,
-	} connectionStatus;
+	BLE_Handler ble_handler;
 
 	unsigned char batteryPercent;
 	unsigned int  batteryMV;
@@ -31,15 +21,12 @@ private:
 public:
 	explicit Tap_BLE(QObject *parent = nullptr);
 
-	Q_INVOKABLE void startDeviceSearch(QString targetName);
-	Q_INVOKABLE void connectTo(const QBluetoothDeviceInfo &device);
+	BLE_Handler *getHandler();
 
 signals:
 
 public slots:
-	void startConnecting();
-
-	void onServicePrepCompleted(QLowEnergyService *startedService);
+	void onProperties_updated();
 };
 
 #endif // TAP_BLE_H
