@@ -50,23 +50,26 @@ esp_err_t event_handler(void *ctx, system_event_t *event)
 
 void testTask(void * params) {
 	vTaskDelay(500/portTICK_PERIOD_MS);
-	NotifyHandler::PatternElement testPattern[] = {
-			{Material::RED, 50000},
-			{Material::RED, 50000},
-			{Material::GREEN, 20000},
-			{Material::GREEN, 50000},
-			{Material::BLUE,  20000},
-			{Material::BLUE, 50000},
-			{0, 50000}
+	NotifyHandler::PatternElement btStart[] = {
+			{Material::BLUE, 100000},
+			{Color(Material::BLUE, 50), 200000},
 	};
 
+	uint64_t lastAdvStart;
 	while(true) {
-		for(uint8_t i=40; i!=0; i--) {
-	    	printf("Bat. lvl: %4d | Touch: %1d\n", batLvl = battery->read(), testPad->read_raw());
-	    	vTaskDelay(3000);
+		lastAdvStart = xTaskGetTickCount();
+		ble_handler->start_advertising(3000);
+		note.flash(btStart, 3);
+		vTaskDelay(2000);
+
+		if(ble_handler->client_connection_time == 0) {
+			vTaskDelay(lastAdvStart + 30000 - xTaskGetTickCount());
 		}
-		//vTaskDelay(120000 / portTICK_PERIOD_MS);
-		note.flash(testPattern, 7);
+		else {
+			uint64_t delay_time = ble_handler->client_connection_time + 28500 - xTaskGetTickCount();
+			ble_handler->client_connection_time = 0;
+			vTaskDelay(delay_time);
+		}
 	}
 }
 
@@ -95,6 +98,23 @@ extern "C" void app_main(void)
 
     setup_bt();
 
+    uint8_t touchVal = 0;
+    volatile uint8_t whoIs = 0;
+
+    Bluetooth::Service customService(ble_handler);
+    customService.set_uuid32(0x123456);
+    Bluetooth::Characteristic touchChar(&customService);
+    touchChar.set_uuid32(0x1);
+    touchChar.set_value(&touchVal, 1, 1);
+
+    touchChar.can_write(true);
+    touchChar.write_cb = [&whoIs](Bluetooth::Characteristic::write_dataset data) {
+    	whoIs = *reinterpret_cast<uint8_t *>(data.data);
+    };
+
+    customService.add_char(&touchChar);
+    ble_handler->add_service(&customService);
+
     TaskHandle_t xHandle = NULL;
     xTaskCreate(testTask, "TTask", 2048, NULL, 2, &xHandle);
 
@@ -114,8 +134,6 @@ extern "C" void app_main(void)
     }
     rgb.clear();
     rgb.apply();
-
-    volatile uint8_t whoIs = 0;
 
     morse.word_callback = [&whoIs](std::string &word) {
     	if(word == "!off") {
@@ -163,11 +181,11 @@ extern "C" void app_main(void)
 			{Color(Material::PURPLE, 120), 50000},
 			{0, 500000}};
 
-    ble_handler->start_advertising();
-
     while (true) {
     	batLvl = battery->read();
     	batteryC->setBatLevel(batLvl);
+
+    	touchVal = testPad->read_raw();
 
     	switch(whoIs) {
     	case 1:
