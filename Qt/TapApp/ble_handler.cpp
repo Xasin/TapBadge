@@ -88,6 +88,7 @@ void BLE_Handler::initiate_reconnect() {
 	update_status(SYNCHED_CONNECTING);
 	BLE_device->connectToDevice();
 	reconnect_timer.start(connection_interval);
+	emit timerUpdated();
 }
 
 
@@ -144,6 +145,7 @@ void BLE_Handler::initiate_find(QString targetDevice) {
 	BLE_discoveryAgent.start(QBluetoothDeviceDiscoveryAgent::LowEnergyMethod);
 
 	reconnect_timer.start(connection_interval);
+	emit timerUpdated();
 }
 
 BLE_Handler::CONNECTION_STATUS BLE_Handler::getConnectionStatus() {

@@ -17,7 +17,7 @@ class BLE_Handler : public QObject
 	Q_PROPERTY(CONNECTION_STATUS connection READ getConnectionStatus NOTIFY connectionStatusUpdated)
 	Q_PROPERTY(int remainingReconnectTime READ getRemainingTimer NOTIFY timerUpdated)
 
-private:
+public:
 	enum CONNECTION_STATUS {
 		DISCONNECTED,
 		FINDING,
@@ -25,7 +25,11 @@ private:
 		SYNCHED_PAUSE,
 		SYNCHED_CONNECTING,
 		SYNCHED_CONNECTED,
-	} connection_status;
+	};
+private:
+	CONNECTION_STATUS connection_status;
+	Q_ENUM(CONNECTION_STATUS)
+
 	int connection_interval;
 	int resynch_tries;
 
