@@ -21,6 +21,7 @@ int main(int argc, char *argv[])
 
 	QQmlApplicationEngine engine;
 
+	qmlRegisterUncreatableType<BLE_Handler>("com.xasin.tap", 1, 0, "BLE_Handler", "");
 	engine.rootContext()->setContextProperty("tapBadge", badge);
 
 	engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
