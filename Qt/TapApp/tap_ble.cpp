@@ -19,3 +19,7 @@ void Tap_BLE::onProperties_updated() {
 
 	qDebug()<<"Battery MV is:"<<batteryMV;
 }
+
+BLE_Handler * Tap_BLE::getHandler() {
+	return &(this->ble_handler);
+}
