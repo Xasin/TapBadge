@@ -30,6 +30,8 @@ void BLE_Handler::update_status(CONNECTION_STATUS nStatus) {
 	if(nStatus == this->connection_status)
 		return;
 
+	qDebug()<<"New status set:"<<nStatus;
+
 	this->connection_status = nStatus;
 	emit connectionStatusUpdated();
 }
@@ -80,10 +82,6 @@ void BLE_Handler::initiate_reconnect() {
 
 	if(BLE_device == nullptr)
 		return;
-
-	QByteArray data;
-	data.push_back(0x1);
-	raw_write_map[QBluetoothUuid(quint32(0x1))] = data;
 
 	update_status(SYNCHED_CONNECTING);
 	BLE_device->connectToDevice();
