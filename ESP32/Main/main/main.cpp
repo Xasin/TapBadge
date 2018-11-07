@@ -51,7 +51,7 @@ esp_err_t event_handler(void *ctx, system_event_t *event)
 void testTask(void * params) {
 	vTaskDelay(500/portTICK_PERIOD_MS);
 	NotifyHandler::PatternElement btStart[] = {
-			{Material::BLUE, 100000},
+			{Color(Material::BLUE, 100), 100000},
 			{Color(Material::BLUE, 50), 200000},
 	};
 
@@ -98,15 +98,14 @@ extern "C" void app_main(void)
 
     setup_bt();
 
-    uint8_t touchVal = 0;
-    volatile uint8_t whoIs = 0;
+    uint8_t whoIs = 0;
 
     Bluetooth::Service customService(ble_handler);
     customService.set_uuid32(0x123456);
+
     Bluetooth::Characteristic touchChar(&customService);
     touchChar.set_uuid32(0x1);
-    touchChar.set_value(&touchVal, 1, 1);
-
+    touchChar.set_value(&whoIs, 1, 1);
     touchChar.can_write(true);
     touchChar.write_cb = [&whoIs](Bluetooth::Characteristic::write_dataset data) {
     	whoIs = *reinterpret_cast<uint8_t *>(data.data);

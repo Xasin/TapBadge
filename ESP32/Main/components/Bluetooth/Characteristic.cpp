@@ -48,7 +48,6 @@ Characteristic::Characteristic(Service * service) :
 	write_cb = nullptr;
 
 	can_read(true);
-	can_notify(true);
 
 	autoResp.auto_rsp = 0;
 
