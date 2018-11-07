@@ -11,6 +11,11 @@ class Tap_BLE : public QObject
 
 	Q_PROPERTY(BLE_Handler *ble_handler READ getHandler)
 
+	Q_PROPERTY(int batteryMV		READ getBatteryMV	NOTIFY deviceDataUpdated)
+	Q_PROPERTY(int batteryPercent READ getBatteryPercent NOTIFY deviceDataUpdated)
+
+	Q_PROPERTY(int whoIs				READ getWhoIs WRITE setWhoIs NOTIFY whoIsChanged)
+
 private:
 
 	BLE_Handler ble_handler;
@@ -18,12 +23,23 @@ private:
 	unsigned char batteryPercent;
 	unsigned int  batteryMV;
 
+	int deviceWhoIs;
+	int whoIs;
+
 public:
 	explicit Tap_BLE(QObject *parent = nullptr);
 
 	BLE_Handler *getHandler();
 
+	int getBatteryPercent();
+	int getBatteryMV();
+
+	int  getWhoIs();
+	void setWhoIs(int whoIs);
+
 signals:
+	void deviceDataUpdated();
+	void whoIsChanged();
 
 public slots:
 	void onProperties_updated();
