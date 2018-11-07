@@ -14,10 +14,6 @@ int main(int argc, char *argv[])
 	QGuiApplication app(argc, argv);
 
 	auto badge = new Tap_BLE();
-	//badge->startDeviceSearch("Tap Badge");
-
-//	auto ble_test = new BLE_Handler();
-//	ble_test->initiate_find();
 
 	QQmlApplicationEngine engine;
 

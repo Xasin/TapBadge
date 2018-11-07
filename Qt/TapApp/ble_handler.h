@@ -54,7 +54,7 @@ private slots:
 
 public:
 	explicit BLE_Handler(QObject *parent = nullptr);
-	void initiate_find(QString targetDevice = "");
+	Q_INVOKABLE void initiate_find(QString targetDevice = "");
 
 	CONNECTION_STATUS getConnectionStatus();
 	int getRemainingTimer();
