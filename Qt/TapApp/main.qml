@@ -25,6 +25,8 @@ ApplicationWindow {
 			ConnectButton {
 				Layout.fillWidth: true
 				Layout.preferredHeight: width;
+
+				Layout.margins: 30;
 			}
 
 			ProgressBar {
