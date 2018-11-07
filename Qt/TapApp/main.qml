@@ -16,6 +16,8 @@ ApplicationWindow {
 	height: 480
 	title: qsTr("Scroll")
 
+	Material.accent: [Material.Grey, Material.Red, Material.Blue, Material.Green][tapBadge.whoIs]
+
 	ScrollView {
 		anchors.fill: parent
 
@@ -29,25 +31,69 @@ ApplicationWindow {
 				Layout.margins: 30;
 			}
 
-			ProgressBar {
-				id: reconTimerBar
+			Rectangle {
 				Layout.fillWidth: true
+				Layout.preferredHeight: 50;
+				Layout.margins: 10
 
-				NumberAnimation on value {
-					id: reconTimerBarCountdown
-					duration: tapBadge.ble_handler.remainingReconnectTime
-					easing.type: Easing.Linear
-					from: 1
-					to:   0
-				}
+				radius: 5
 
-				Connections {
-					target: tapBadge.ble_handler
-					onTimerUpdated: {
-						reconTimerBarCountdown.restart();
+				clip: true
+
+				color: "transparent"
+				border.color: Material.shade(Material.accent, Material.Shade900);
+				border.width: 2
+
+				TabBar {
+					anchors.fill: parent;
+					anchors.margins: 2
+
+					currentIndex: tapBadge.whoIs -1;
+
+					TabButton {
+						text: "Xasin"
+						onPressed: tapBadge.whoIs = 1
+					}
+					TabButton {
+						text: "Neira"
+						onPressed: tapBadge.whoIs = 2
+					}
+					TabButton {
+						text: "Mesh"
+						onPressed: tapBadge.whoIs = 3
 					}
 				}
 			}
+
+			Pane {
+				Layout.margins: 10;
+				Layout.fillWidth: true;
+				Layout.preferredHeight: 30;
+				Material.elevation: 3
+
+				padding: 0
+
+
+
+				Label {
+					anchors.fill: parent;
+					text: "Power: " + tapBadge.batteryMV + "mV";
+
+					horizontalAlignment:  Text.AlignHCenter;
+				}
+
+				ProgressBar {
+					value: tapBadge.batteryPercent / 100;
+					anchors.bottom: parent.bottom
+					width: parent.width
+
+					Material.accent: Material.Blue
+				}
+			}
 		}
+	}
+
+	Component.onCompleted: {
+		tapBadge.ble_handler.initiate_find();
 	}
 }
