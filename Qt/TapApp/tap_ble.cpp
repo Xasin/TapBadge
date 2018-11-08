@@ -41,11 +41,13 @@ void Tap_BLE::onProperties_updated() {
 	if(data != nullptr)
 		batteryMV = *(reinterpret_cast<uint16_t*>(data->data()));
 
+	data = ble_handler.get_data(QBluetoothUuid(quint32(0x2a19)));
+	if(data != nullptr)
+		batteryPercent = *(reinterpret_cast<uint8_t*>(data->data()));
+
 	data = ble_handler.get_data(QBluetoothUuid(quint32(1)));
 	if(data != nullptr) {
 		int newWhois = *(reinterpret_cast<char*>(data->data()));
-
-		qDebug()<<"Device WhoIS: "<<newWhois;
 
 		if((newWhois != deviceWhoIs)) {
 			deviceWhoIs = newWhois;

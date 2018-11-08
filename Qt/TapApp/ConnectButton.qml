@@ -3,6 +3,7 @@ import QtQuick 2.11
 import QtQuick.Controls 2.2
 
 import QtQuick.Shapes 1.11
+import QtGraphicalEffects 1.0
 
 import QtQuick.Controls.Material 2.3
 
@@ -15,6 +16,8 @@ Item {
 		anchors.centerIn: parent;
 
 		z: 1
+
+		antialiasing: true
 
 		ShapePath {
 			id: countdownPath
@@ -65,6 +68,23 @@ Item {
 		}
 	}
 
+	RadialGradient {
+		anchors.centerIn: parent;
+		width: parent.width + 10
+		height: width
+
+		gradient: Gradient {
+			GradientStop {
+				position: 0.40;
+				color: Material.shade(reconButtonBackground.color, Material.Shade600);
+			}
+			GradientStop {
+				position: 0.5
+				color: "transparent"
+			}
+		}
+	}
+
 	RoundButton {
 		id: rootButton
 
@@ -78,6 +98,8 @@ Item {
 			id: reconButtonBackground
 			radius: Math.min(width, height);
 
+			border.color: Material.color(Material.Grey, Material.Shade600);
+
 			anchors.fill: parent;
 
 			Behavior on color {
@@ -87,7 +109,7 @@ Item {
 			}
 
 			property int materialCode: Material.Purple;
-			color: Material.color(materialCode, rootButton.pressed ? Material.Shade400 : Material.Shade600);
+			color: Material.color(materialCode, rootButton.pressed ? Material.Shade500 : Material.Shade700);
 		}
 
 		Connections {

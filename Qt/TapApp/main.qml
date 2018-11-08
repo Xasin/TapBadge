@@ -29,27 +29,31 @@ ApplicationWindow {
 				Layout.preferredHeight: width;
 
 				Layout.margins: 30;
+				Layout.leftMargin: 50
+				Layout.rightMargin: 50
 			}
 
-			Rectangle {
+			Frame {
 				Layout.fillWidth: true
 				Layout.preferredHeight: 50;
 				Layout.margins: 10
 
-				radius: 5
+				Material.elevation: 3;
 
-				clip: true
-
-				color: "transparent"
-				border.color: Material.shade(Material.accent, Material.Shade900);
-				border.width: 2
+				padding: 2
 
 				TabBar {
 					anchors.fill: parent;
-					anchors.margins: 2
+					anchors.margins: 0
 
-					currentIndex: tapBadge.whoIs -1;
+					height: parent.height - parent.padding*2
 
+					currentIndex: tapBadge.whoIs;
+
+					TabButton {
+						text: "Sleep"
+						onPressed: tapBadge.whoIs = 0;
+					}
 					TabButton {
 						text: "Xasin"
 						onPressed: tapBadge.whoIs = 1
@@ -65,19 +69,22 @@ ApplicationWindow {
 				}
 			}
 
-			Pane {
+			Frame {
 				Layout.margins: 10;
 				Layout.fillWidth: true;
-				Layout.preferredHeight: 30;
+				Layout.preferredHeight: 36;
 				Material.elevation: 3
 
-				padding: 0
+				padding: 1
 
 				Label {
 					anchors.fill: parent;
 					text: "Power: " + tapBadge.batteryMV + "mV";
 
 					horizontalAlignment:  Text.AlignHCenter;
+					verticalAlignment:    Text.AlignVCenter;
+
+					font.pixelSize: 18
 				}
 
 				ProgressBar {
