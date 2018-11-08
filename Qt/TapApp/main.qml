@@ -4,6 +4,8 @@ import QtQuick.Controls 2.2
 
 import QtQuick.Layouts 1.3
 
+import QtApplicationManager 1.0
+
 import QtQuick.Controls.Material 2.3
 
 import com.xasin.tap 1.0
@@ -17,6 +19,16 @@ ApplicationWindow {
 	title: qsTr("Scroll")
 
 	Material.accent: [Material.Grey, Material.Red, Material.Blue, Material.Green][tapBadge.whoIs]
+
+	Notification {
+		priority: 0
+
+		progress: -1
+		showProgress: true
+		sticky: true
+
+		visible: true
+	}
 
 	ScrollView {
 		anchors.fill: parent
@@ -72,8 +84,6 @@ ApplicationWindow {
 				Material.elevation: 3
 
 				padding: 0
-
-
 
 				Label {
 					anchors.fill: parent;
