@@ -3,6 +3,8 @@
 
 #include <QObject>
 
+#include <QtMqtt/QtMqtt>
+
 #include "ble_handler.h"
 
 class Tap_BLE : public QObject
@@ -19,6 +21,10 @@ class Tap_BLE : public QObject
 private:
 
 	BLE_Handler ble_handler;
+
+	QMqttClient			mqtt_client;
+	QMqttSubscription *mqtt_sub_whoIs;
+	QTimer				mqtt_reconnet;
 
 	unsigned char batteryPercent;
 	unsigned int  batteryMV;
