@@ -26,6 +26,7 @@
 
 #include "peripheral/batman.h"
 
+#include <sstream>
 #include <string.h>
 
 using namespace Peripheral;
@@ -98,6 +99,7 @@ extern "C" void app_main(void)
 
     setup_bt();
 
+    uint8_t touchVal;
     uint8_t whoIs = 0;
 
     Bluetooth::Service customService(ble_handler);
@@ -111,6 +113,20 @@ extern "C" void app_main(void)
     	whoIs = *reinterpret_cast<uint8_t *>(data.data);
     };
 
+    std::string testData;
+    Bluetooth::Characteristic morseData(&customService);
+    morseData.set_uuid32(0x2);
+    morseData.set_value(&testData, 1);
+    morseData.read_cb = [&touchVal, &testData, &morseData](Characteristic::read_dataset data) {
+    	std::stringstream sConv;
+    	sConv << int(touchVal);
+    	testData += sConv.str();
+
+    	morseData.serve_read(data, testData.data(), testData.length());
+    	testData.clear();
+    };
+
+    customService.add_char(&morseData);
     customService.add_char(&touchChar);
     ble_handler->add_service(&customService);
 
@@ -134,7 +150,7 @@ extern "C" void app_main(void)
     rgb.clear();
     rgb.apply();
 
-    morse.word_callback = [&whoIs](std::string &word) {
+    morse.word_callback = [&testData, &whoIs](std::string &word) {
     	if(word == "!off") {
     		rgb.fill(0); rgb.apply(); rgb.update();
     		ble_handler->disable();
@@ -143,10 +159,9 @@ extern "C" void app_main(void)
     		esp_deep_sleep_start();
     	}
 
-    	if(word == "!b")
+    	else if(word == "!b")
     		ble_handler->start_advertising(10000);
-
-    	if(word == "x")
+    	else if(word == "x")
     		whoIs = 1;
     	else if(word == "n")
     		whoIs = 2;
@@ -154,8 +169,9 @@ extern "C" void app_main(void)
     		whoIs = 3;
     	else if(word == "off")
     		whoIs = 0;
-    	else
-    		return;
+    	else {
+    		testData += word + "\n";
+    	}
 
     	rgb.apply();
     	rgb.update();
