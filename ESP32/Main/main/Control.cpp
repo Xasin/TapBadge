@@ -39,7 +39,7 @@ Control::Control(touch_pad_t padNo) : padNo(padNo), charDetectHandle(nullptr) {
 
 	touch_pad_set_voltage(TOUCH_HVOLT_2V7, TOUCH_LVOLT_0V5, TOUCH_HVOLT_ATTEN_1V);
 
-	touch_pad_config(padNo, 0x25);
+	touch_pad_config(padNo, 40);
 	touch_pad_io_init(padNo);
 
 	touch_pad_isr_register([](void *args) {
