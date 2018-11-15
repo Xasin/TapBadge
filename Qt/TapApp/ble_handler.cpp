@@ -163,3 +163,6 @@ QByteArray * BLE_Handler::get_data(QBluetoothUuid key) {
 void BLE_Handler::write_data(QBluetoothUuid key, QByteArray &data) {
 	raw_write_map.insert(key, data);
 }
+void BLE_Handler::clear_data(QBluetoothUuid key) {
+	raw_write_map.remove(key);
+}

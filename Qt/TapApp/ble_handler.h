@@ -61,6 +61,7 @@ public:
 
 	QByteArray *get_data(QBluetoothUuid key);
 	void write_data(QBluetoothUuid key, QByteArray &data);
+	void clear_data(QBluetoothUuid key);
 
 signals:
 	void connectionStatusUpdated();
