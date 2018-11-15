@@ -35,6 +35,7 @@ public:
 		uint16_t length;
 		void *data;
 	};
+	typedef esp_ble_gatts_cb_param_t::gatts_read_evt_param read_dataset;
 
 	Service * const service;
 
@@ -46,6 +47,7 @@ public:
 	esp_attr_value_t 		value;
 
 	std::function<void (write_dataset)> write_cb;
+	std::function<void (read_dataset)>  read_cb;
 
 	Characteristic(Service * headService);
 
@@ -59,6 +61,8 @@ public:
 	void can_write(bool val);
 	void can_notify(bool val);
 	void can_indicate(bool val);
+
+	void serve_read(read_dataset readEvent, void const * data, uint8_t dataLen);
 
 	void send_notify(void *data, uint8_t data_len, bool need_confirm);
 
