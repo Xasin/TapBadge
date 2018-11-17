@@ -29,6 +29,8 @@
 #include <sstream>
 #include <string.h>
 
+#define RECONNECT_TIME 10000
+
 using namespace Peripheral;
 
 Peripheral::NeoController rgb  = Peripheral::NeoController(GPIO_NUM_5, RMT_CHANNEL_0, 1);
@@ -59,15 +61,15 @@ void testTask(void * params) {
 	uint64_t lastAdvStart;
 	while(true) {
 		lastAdvStart = xTaskGetTickCount();
-		ble_handler->start_advertising(3000);
+		ble_handler->start_advertising(2000);
 		note.flash(btStart, 3);
 		vTaskDelay(2000);
 
 		if(ble_handler->client_connection_time == 0) {
-			vTaskDelay(lastAdvStart + 30000 - xTaskGetTickCount());
+			vTaskDelay(lastAdvStart + RECONNECT_TIME - xTaskGetTickCount());
 		}
 		else {
-			uint64_t delay_time = ble_handler->client_connection_time + 28500 - xTaskGetTickCount();
+			uint64_t delay_time = ble_handler->client_connection_time + RECONNECT_TIME - 1000 - xTaskGetTickCount();
 			ble_handler->client_connection_time = 0;
 			vTaskDelay(delay_time);
 		}
@@ -118,10 +120,6 @@ extern "C" void app_main(void)
     morseData.set_uuid32(0x2);
     morseData.set_value(&testData, 1);
     morseData.read_cb = [&touchVal, &testData, &morseData](Characteristic::read_dataset data) {
-    	std::stringstream sConv;
-    	sConv << int(touchVal);
-    	testData += sConv.str();
-
     	morseData.serve_read(data, testData.data(), testData.length());
     	testData.clear();
     };
@@ -139,12 +137,11 @@ extern "C" void app_main(void)
     battery = new Peripheral::Batman(ADC2_GPIO2_CHANNEL);
 
 
-    uint32_t colors[] = {Material::RED, Material::PINK, Material::PURPLE, Material::DEEP_PURPLE, Material::INDIGO,
-							 Material::BLUE, Material::CYAN, Material::GREEN, Material::LIME, Material::YELLOW, Material::AMBER, Material::ORANGE, Material::DEEP_ORANGE};
+    uint32_t colors[] = {Material::RED, Material::CYAN, Material::GREEN, Material::PURPLE, Material::BLUE, Material::ORANGE};
 
-    for(uint8_t i=0; i<12; i++) {
+    for(uint8_t i=0; i<6; i++) {
 		rgb.fill(colors[i]);
-		rgb.fadeTransition(100000);
+		rgb.fadeTransition(200000);
 		vTaskDelay(200/portTICK_PERIOD_MS);
     }
     rgb.clear();
@@ -159,7 +156,9 @@ extern "C" void app_main(void)
     		esp_deep_sleep_start();
     	}
 
-    	else if(word == "!b")
+		testData += word + "\n";
+
+    	if(word == "!b")
     		ble_handler->start_advertising(10000);
     	else if(word == "x")
     		whoIs = 1;
@@ -169,9 +168,6 @@ extern "C" void app_main(void)
     		whoIs = 3;
     	else if(word == "off")
     		whoIs = 0;
-    	else {
-    		testData += word + "\n";
-    	}
 
     	rgb.apply();
     	rgb.update();

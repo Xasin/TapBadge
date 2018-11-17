@@ -18,7 +18,7 @@ Tap_BLE::Tap_BLE(QObject *parent) :
 		this->mqtt_client.disconnectFromHost();
 		this->mqtt_client.connectToHost();
 
-		this->mqtt_reconnet.start(30000);
+		this->mqtt_reconnet.start(5000);
 	});
 
 	connect(&mqtt_client, &QMqttClient::disconnected, &mqtt_reconnet,
@@ -26,7 +26,7 @@ Tap_BLE::Tap_BLE(QObject *parent) :
 		qDebug()<<"Mqtt disconnected :c";
 
 		mqtt_client.connectToHost();
-		this->mqtt_reconnet.start(5000);
+		this->mqtt_reconnet.start(2000);
 	});
 
 	connect(&mqtt_client, &QMqttClient::connected, this,
@@ -105,27 +105,28 @@ void Tap_BLE::onProperties_updated() {
 	if(data != nullptr)
 		batteryPercent = *(reinterpret_cast<uint8_t*>(data->data()));
 
-	data = ble_handler.get_data(QBluetoothUuid(quint32(1)));
-	if(data != nullptr) {
-		int newWhois = *(reinterpret_cast<char*>(data->data()));
+//	data = ble_handler.get_data(QBluetoothUuid(quint32(1)));
+//	if(data != nullptr) {
+//		int newWhois = *(reinterpret_cast<char*>(data->data()));
 
-		if((newWhois != deviceWhoIs)) {
-			deviceWhoIs = newWhois;
-			ble_handler.clear_data(QBluetoothUuid(quint32(0x1)));
+//		if((newWhois != deviceWhoIs)) {
+//			deviceWhoIs = newWhois;
+//			ble_handler.clear_data(QBluetoothUuid(quint32(0x1)));
 
-			if(newWhois != whoIs) {
-				whoIs = newWhois;
+//			if(newWhois != whoIs) {
+//				whoIs = newWhois;
 
-				QString whoIsNames[] = {"none", "Xasin", "Neira", "Mesh"};
-				mqtt_client.publish(QString("Personal/Xasin/Switching/Who"), whoIsNames[whoIs].toUtf8(), 1, true);
-				emit whoIsChanged();
-			}
-		}
-	}
+//				QString whoIsNames[] = {"none", "Xasin", "Neira", "Mesh"};
+//				mqtt_client.publish(QString("Personal/Xasin/Switching/Who"), whoIsNames[whoIs].toUtf8(), 1, true);
+//				emit whoIsChanged();
+//			}
+//		}
+//	}
 
 	data = ble_handler.get_data(QBluetoothUuid(quint32(2)));
 	if(data != nullptr) {
 		qDebug()<<"Test boop value is:"<<(*data);
+		mqtt_client.publish(QString("Personal/Xasin/TapCMD"), *data, 2, false);
 	}
 
 	emit deviceDataUpdated();

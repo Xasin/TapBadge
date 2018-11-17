@@ -2,7 +2,7 @@
 
 BLE_Handler::BLE_Handler(QObject *parent) : QObject(parent),
 	connection_status(DISCONNECTED),
-	connection_interval(30000), resynch_tries(0),
+	connection_interval(10000), resynch_tries(0),
 	reconnect_timer(this), disconnect_timer(this),
 	target_name("Tap Badge"),
 	BLE_discoveryAgent(this), BLE_device(nullptr),
@@ -49,7 +49,7 @@ void BLE_Handler::initial_connect(const QBluetoothDeviceInfo &device) {
 		resynch_tries = 0;
 
 		BLE_device->discoverServices();
-		disconnect_timer.start(2000);
+		disconnect_timer.start(3000);
 
 		qDebug()<<"Device connected!";
 	});
