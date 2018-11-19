@@ -20,9 +20,7 @@
 #include "NeoController.h"
 #include "NotifyHandler.h"
 
-#include "BLEHandler.h"
-
-#include "services/BatteryService.h"
+#include "SPPServer.h"
 
 #include "peripheral/batman.h"
 
@@ -41,9 +39,6 @@ Touch::Control *testPad;
 
 Peripheral::Batman *battery;
 
-Peripheral::BLE_Handler *ble_handler;
-Peripheral::Bluetooth::BatteryService *batteryC;
-
 uint16_t batLvl;
 
 esp_err_t event_handler(void *ctx, system_event_t *event)
@@ -61,28 +56,9 @@ void testTask(void * params) {
 	uint64_t lastAdvStart;
 	while(true) {
 		lastAdvStart = xTaskGetTickCount();
-		ble_handler->start_advertising(2000);
-		note.flash(btStart, 3);
-		vTaskDelay(2000);
-
-		if(ble_handler->client_connection_time == 0) {
-			vTaskDelay(lastAdvStart + RECONNECT_TIME - xTaskGetTickCount());
-		}
-		else {
-			uint64_t delay_time = ble_handler->client_connection_time + RECONNECT_TIME - 1000 - xTaskGetTickCount();
-			ble_handler->client_connection_time = 0;
-			vTaskDelay(delay_time);
-		}
+		note.flash(btStart, 2);
+		vTaskDelay(5000);
 	}
-}
-
-void setup_bt() {
-    ble_handler = new Peripheral::BLE_Handler("Tap Badge");
-    batteryC = new Peripheral::Bluetooth::BatteryService(ble_handler, 3650, 4000);
-
-    ble_handler->set_GAP_param(ble_handler->get_GAP_defaults());
-
-    vTaskDelay(10);
 }
 
 extern "C" void app_main(void)
@@ -99,45 +75,21 @@ extern "C" void app_main(void)
 	power_config.light_sleep_enable = true;
     esp_pm_configure(&power_config);
 
-    setup_bt();
-
-    uint8_t touchVal;
-    uint8_t whoIs = 0;
-
-    Bluetooth::Service customService(ble_handler);
-    customService.set_uuid32(0x123456);
-
-    Bluetooth::Characteristic touchChar(&customService);
-    touchChar.set_uuid32(0x1);
-    touchChar.set_value(&whoIs, 1, 1);
-    touchChar.can_write(true);
-    touchChar.write_cb = [&whoIs](Bluetooth::Characteristic::write_dataset data) {
-    	whoIs = *reinterpret_cast<uint8_t *>(data.data);
-    };
-
-    std::string testData;
-    Bluetooth::Characteristic morseData(&customService);
-    morseData.set_uuid32(0x2);
-    morseData.set_value(&testData, 1);
-    morseData.read_cb = [&touchVal, &testData, &morseData](Characteristic::read_dataset data) {
-    	morseData.serve_read(data, testData.data(), testData.length());
-    	testData.clear();
-    };
-
-    customService.add_char(&morseData);
-    customService.add_char(&touchChar);
-    ble_handler->add_service(&customService);
-
     TaskHandle_t xHandle = NULL;
     xTaskCreate(testTask, "TTask", 2048, NULL, 2, &xHandle);
 
     testPad = new Touch::Control(TOUCH_PAD_NUM0);
-   testPad->charDetectHandle = morse.getDecodeHandle();
+    testPad->charDetectHandle = morse.getDecodeHandle();
 
     battery = new Peripheral::Batman(ADC2_GPIO2_CHANNEL);
 
+    std::string testData;
+    volatile uint8_t whoIs;
+    uint8_t touchVal;
 
     uint32_t colors[] = {Material::RED, Material::CYAN, Material::GREEN, Material::PURPLE, Material::BLUE, Material::ORANGE};
+
+    Bluetooth::SPP_Server *testServer = new Bluetooth::SPP_Server(5);
 
     for(uint8_t i=0; i<6; i++) {
 		rgb.fill(colors[i]);
@@ -150,7 +102,6 @@ extern "C" void app_main(void)
     morse.word_callback = [&testData, &whoIs](std::string &word) {
     	if(word == "!off") {
     		rgb.fill(0); rgb.apply(); rgb.update();
-    		ble_handler->disable();
 
     		esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
     		esp_deep_sleep_start();
@@ -158,9 +109,7 @@ extern "C" void app_main(void)
 
 		testData += word + "\n";
 
-    	if(word == "!b")
-    		ble_handler->start_advertising(10000);
-    	else if(word == "x")
+    	if(word == "x")
     		whoIs = 1;
     	else if(word == "n")
     		whoIs = 2;
@@ -194,7 +143,6 @@ extern "C" void app_main(void)
 
     while (true) {
     	batLvl = battery->read();
-    	batteryC->setBatLevel(batLvl);
 
     	touchVal = testPad->read_raw();
 
