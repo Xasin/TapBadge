@@ -37,7 +37,10 @@ class SPP_Server {
 
 	std::string device_name;
 
+	std::string inputBuffer;
+
 	void write_packet(uint16_t id, const void * data, const size_t length);
+	void decode_packet(const void *rawData, size_t length);
 
 public:
 	void SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param);

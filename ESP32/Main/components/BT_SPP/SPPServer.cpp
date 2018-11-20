@@ -31,7 +31,6 @@ void SPP_Server::static_SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_
 }
 
 void SPP_Server::write_packet(uint16_t id, const void *data, const size_t dLength) {
-
 	std::string outString(reinterpret_cast<const char *>(&id), 2);
 	outString.append(reinterpret_cast<const char *>(data), dLength);
 	auto data_ptr = reinterpret_cast<const unsigned char *>(outString.data());
@@ -47,8 +46,21 @@ void SPP_Server::write_packet(uint16_t id, const void *data, const size_t dLengt
 
 	delete outBuffer;
 }
+void SPP_Server::decode_packet(const void *rawData, size_t length) {
+	auto data_ptr = reinterpret_cast<const unsigned char *>(rawData);
 
-SPP_Server::SPP_Server(int dummy) : SPP_handle(-1), values() {
+	if(data_ptr[length-1] != '\n')
+		return;  // TODO Change this to a intermediary buffer store.
+
+	size_t decodedLength = 0;
+	mbedtls_base64_decode(nullptr, 0, &decodedLength, data_ptr, length);
+
+	auto inBuffer = new unsigned char[decodedLength];
+}
+
+SPP_Server::SPP_Server(int dummy) :
+		SPP_handle(-1), values(),
+		inputBuffer() {
 	assert(headServer == nullptr);
 	headServer = this;
 
@@ -94,7 +106,6 @@ void SPP_Server::GAP_callback(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t
 }
 void SPP_Server::SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) {
 	std::string boop = "Boop!";
-	std::string dataStr;
 
 	switch(event) {
 	case ESP_SPP_INIT_EVT:
@@ -111,11 +122,19 @@ void SPP_Server::SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *para
 		SPP_handle = param->start.handle;
 		puts("SPP open!");
 	break;
-	case ESP_SPP_DATA_IND_EVT:
-		dataStr = std::string(reinterpret_cast<char *>(param->data_ind.data), param->data_ind.len);
-		printf(("SPP data received: " + dataStr + "\n").data());
+	case ESP_SPP_DATA_IND_EVT: {
+		auto dataStr = std::string(reinterpret_cast<char *>(param->data_ind.data), param->data_ind.len);
+		printf(("SPP raw received: " + dataStr + "\n").data());
+		inputBuffer += dataStr;
+
+		int newlinePos = 0;
+		while((newlinePos = inputBuffer.find('\n', 0)) != -1) {
+			this->decode_packet(inputBuffer.data(), newlinePos);
+			inputBuffer = inputBuffer.substr(newlinePos + 1);
+		}
 
 		this->write_packet('A', boop.data(), boop.size());
+	}
 	break;
 	default:
 		printf("SPP unknown value: %d\n", int(event));
