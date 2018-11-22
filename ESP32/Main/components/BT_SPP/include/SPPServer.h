@@ -26,6 +26,7 @@
 namespace Bluetooth {
 
 class SPP_Server {
+private:
 	static SPP_Server* headServer;
 
 	static void static_SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param);
@@ -33,20 +34,26 @@ class SPP_Server {
 
 	uint32_t SPP_handle;
 
-	std::map<uint16_t, SPPValue*> values;
-
 	std::string device_name;
-
 	std::string inputBuffer;
+
+	bool connected;
+
+protected:
+	friend SPP_Value;
 
 	void write_packet(uint16_t id, const void * data, const size_t length);
 	void decode_packet(const void *rawData, size_t length);
 
 public:
+	std::map<uint16_t, SPP_Value*> values;
+
 	void SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param);
 	void GAP_callback(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *param);
 
-	SPP_Server(int dummy);
+	SPP_Server();
+
+	bool is_connected();
 };
 
 } /* namespace Bluetooth */

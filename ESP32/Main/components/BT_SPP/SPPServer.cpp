@@ -49,18 +49,34 @@ void SPP_Server::write_packet(uint16_t id, const void *data, const size_t dLengt
 void SPP_Server::decode_packet(const void *rawData, size_t length) {
 	auto data_ptr = reinterpret_cast<const unsigned char *>(rawData);
 
-	if(data_ptr[length-1] != '\n')
-		return;  // TODO Change this to a intermediary buffer store.
-
 	size_t decodedLength = 0;
 	mbedtls_base64_decode(nullptr, 0, &decodedLength, data_ptr, length);
-
 	auto inBuffer = new unsigned char[decodedLength];
+
+	size_t decodedLengthTarget = decodedLength;
+
+	mbedtls_base64_decode(inBuffer, decodedLength, &decodedLength, data_ptr, length);
+
+	printf("Raw length: %d ; Decoded: %d ; Successful: %d", length, decodedLengthTarget, decodedLength);
+
+	if(decodedLength == 0)
+		return;
+
+	uint16_t id = *(reinterpret_cast<uint16_t *>(inBuffer));
+
+	if(values.count(id) != 0) {
+		values[id]->accept_data(inBuffer + sizeof(uint16_t), decodedLength - sizeof(uint16_t));
+	}
+
+	delete inBuffer;
 }
 
-SPP_Server::SPP_Server(int dummy) :
-		SPP_handle(-1), values(),
-		inputBuffer() {
+SPP_Server::SPP_Server() :
+		SPP_handle(-1),
+		inputBuffer(),
+		values() {
+	connected = false;
+
 	assert(headServer == nullptr);
 	headServer = this;
 
@@ -122,6 +138,12 @@ void SPP_Server::SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *para
 		SPP_handle = param->start.handle;
 		puts("SPP open!");
 	break;
+	case ESP_SPP_OPEN_EVT:
+		connected = true;
+
+		for(auto v : values)
+			v.second->on_reconnect();
+	break;
 	case ESP_SPP_DATA_IND_EVT: {
 		auto dataStr = std::string(reinterpret_cast<char *>(param->data_ind.data), param->data_ind.len);
 		printf(("SPP raw received: " + dataStr + "\n").data());
@@ -129,6 +151,10 @@ void SPP_Server::SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *para
 
 		int newlinePos = 0;
 		while((newlinePos = inputBuffer.find('\n', 0)) != -1) {
+			std::string tString(inputBuffer.data(), newlinePos);
+			tString += '\0';
+			printf("Decoding data string: %s!!\n", tString.data());
+
 			this->decode_packet(inputBuffer.data(), newlinePos);
 			inputBuffer = inputBuffer.substr(newlinePos + 1);
 		}
@@ -136,10 +162,18 @@ void SPP_Server::SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *para
 		this->write_packet('A', boop.data(), boop.size());
 	}
 	break;
+
+	case ESP_SPP_CLOSE_EVT:
+		connected = false;
+	break;
 	default:
 		printf("SPP unknown value: %d\n", int(event));
 	break;
 	}
+}
+
+bool SPP_Server::is_connected() {
+	return connected;
 }
 
 } /* namespace Bluetooth */

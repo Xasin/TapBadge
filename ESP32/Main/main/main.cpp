@@ -89,7 +89,9 @@ extern "C" void app_main(void)
 
     uint32_t colors[] = {Material::RED, Material::CYAN, Material::GREEN, Material::PURPLE, Material::BLUE, Material::ORANGE};
 
-    Bluetooth::SPP_Server *testServer = new Bluetooth::SPP_Server(5);
+    Bluetooth::SPP_Server testServer(void);
+
+    testServer.values['A'] = new Bluetooth::SPP_Value(testServer, uint16_t('A'));
 
     for(uint8_t i=0; i<6; i++) {
 		rgb.fill(colors[i]);
