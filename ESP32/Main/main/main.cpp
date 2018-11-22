@@ -84,14 +84,19 @@ extern "C" void app_main(void)
     battery = new Peripheral::Batman(ADC2_GPIO2_CHANNEL);
 
     std::string testData;
-    volatile uint8_t whoIs;
+    uint8_t whoIs;
     uint8_t touchVal;
 
     uint32_t colors[] = {Material::RED, Material::CYAN, Material::GREEN, Material::PURPLE, Material::BLUE, Material::ORANGE};
 
-    Bluetooth::SPP_Server testServer(void);
+    Bluetooth::SPP_Server testServer = Bluetooth::SPP_Server();
 
-    testServer.values['A'] = new Bluetooth::SPP_Value(testServer, uint16_t('A'));
+    Bluetooth::SPP_Value  whoIsValue = Bluetooth::SPP_Value(testServer, 65);
+    whoIsValue.data_length = 1;
+    whoIsValue.data_location = &whoIs;
+    whoIsValue.write_into_data = true;
+
+    testServer.values[65] = &whoIsValue;
 
     for(uint8_t i=0; i<6; i++) {
 		rgb.fill(colors[i]);
@@ -101,7 +106,7 @@ extern "C" void app_main(void)
     rgb.clear();
     rgb.apply();
 
-    morse.word_callback = [&testData, &whoIs](std::string &word) {
+    morse.word_callback = [&testData, &whoIs, &whoIsValue](std::string &word) {
     	if(word == "!off") {
     		rgb.fill(0); rgb.apply(); rgb.update();
 
@@ -111,14 +116,21 @@ extern "C" void app_main(void)
 
 		testData += word + "\n";
 
+		uint8_t newWhoIs = whoIs;
+
     	if(word == "x")
-    		whoIs = 1;
+    		newWhoIs = 1;
     	else if(word == "n")
-    		whoIs = 2;
+    		newWhoIs = 2;
     	else if(word == "m")
-    		whoIs = 3;
+    		newWhoIs = 3;
     	else if(word == "off")
-    		whoIs = 0;
+    		newWhoIs = 0;
+
+    	if(newWhoIs != whoIs) {
+    		whoIs = newWhoIs;
+    		whoIsValue.update_retained();
+    	}
 
     	rgb.apply();
     	rgb.update();
