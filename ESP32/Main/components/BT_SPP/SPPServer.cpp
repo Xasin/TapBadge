@@ -32,7 +32,9 @@ void SPP_Server::static_SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_
 
 void SPP_Server::write_packet(uint16_t id, const void *data, const size_t dLength) {
 	std::string outString(reinterpret_cast<const char *>(&id), 2);
-	outString.append(reinterpret_cast<const char *>(data), dLength);
+	if(dLength > 0)
+		outString.append(reinterpret_cast<const char *>(data), dLength);
+
 	auto data_ptr = reinterpret_cast<const unsigned char *>(outString.data());
 
 	size_t bLength = 0;
@@ -42,7 +44,7 @@ void SPP_Server::write_packet(uint16_t id, const void *data, const size_t dLengt
 
 	mbedtls_base64_encode(outBuffer, bLength, &bLength, data_ptr, outString.size());
 	outBuffer[bLength] = '\n';
-	esp_spp_write(SPP_handle, bLength, outBuffer);
+	esp_spp_write(SPP_handle, bLength +1, outBuffer);
 
 	delete outBuffer;
 }
@@ -51,16 +53,12 @@ void SPP_Server::decode_packet(const void *rawData, size_t length) {
 
 	size_t decodedLength = 0;
 	mbedtls_base64_decode(nullptr, 0, &decodedLength, data_ptr, length);
-	auto inBuffer = new unsigned char[decodedLength];
 
-	size_t decodedLengthTarget = decodedLength;
-
-	mbedtls_base64_decode(inBuffer, decodedLength, &decodedLength, data_ptr, length);
-
-	printf("Raw length: %d ; Decoded: %d ; Successful: %d", length, decodedLengthTarget, decodedLength);
-
-	if(decodedLength == 0)
+	if(decodedLength < 2)
 		return;
+
+	auto inBuffer = new unsigned char[decodedLength];
+	mbedtls_base64_decode(inBuffer, decodedLength, &decodedLength, data_ptr, length);
 
 	uint16_t id = *(reinterpret_cast<uint16_t *>(inBuffer));
 
@@ -137,8 +135,7 @@ void SPP_Server::SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *para
 	case ESP_SPP_SRV_OPEN_EVT:
 		SPP_handle = param->start.handle;
 		puts("SPP open!");
-	break;
-	case ESP_SPP_OPEN_EVT:
+
 		connected = true;
 
 		for(auto v : values)
@@ -146,15 +143,10 @@ void SPP_Server::SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *para
 	break;
 	case ESP_SPP_DATA_IND_EVT: {
 		auto dataStr = std::string(reinterpret_cast<char *>(param->data_ind.data), param->data_ind.len);
-		printf(("SPP raw received: " + dataStr + "\n").data());
 		inputBuffer += dataStr;
 
 		int newlinePos = 0;
 		while((newlinePos = inputBuffer.find('\n', 0)) != -1) {
-			std::string tString(inputBuffer.data(), newlinePos);
-			tString += '\0';
-			printf("Decoding data string: %s!!\n", tString.data());
-
 			this->decode_packet(inputBuffer.data(), newlinePos);
 			inputBuffer = inputBuffer.substr(newlinePos + 1);
 		}
