@@ -21,6 +21,7 @@
 #include "NotifyHandler.h"
 
 #include "SPPServer.h"
+#include "SPPData.h"
 
 #include "peripheral/batman.h"
 
@@ -61,6 +62,11 @@ void testTask(void * params) {
 	}
 }
 
+template<typename T>
+size_t getSizeOf() {
+	return sizeof(T);
+}
+
 extern "C" void app_main(void)
 {
     nvs_flash_init();
@@ -84,19 +90,16 @@ extern "C" void app_main(void)
     battery = new Peripheral::Batman(ADC2_GPIO2_CHANNEL);
 
     std::string testData;
-    uint8_t whoIs;
+    char whoIs = 0;
     uint8_t touchVal;
 
     uint32_t colors[] = {Material::RED, Material::CYAN, Material::GREEN, Material::PURPLE, Material::BLUE, Material::ORANGE};
 
     Bluetooth::SPP_Server testServer = Bluetooth::SPP_Server();
 
-    Bluetooth::SPP_Value  whoIsValue = Bluetooth::SPP_Value(testServer, 65);
-    whoIsValue.data_length = 1;
-    whoIsValue.data_location = &whoIs;
-    whoIsValue.write_into_data = true;
-
+    auto whoIsValue = Bluetooth::SPP_Data(testServer, 65, &whoIs, sizeof(whoIs));
     testServer.values[65] = &whoIsValue;
+    whoIsValue.allow_write = true;
 
     for(uint8_t i=0; i<6; i++) {
 		rgb.fill(colors[i]);
@@ -128,8 +131,7 @@ extern "C" void app_main(void)
     		newWhoIs = 0;
 
     	if(newWhoIs != whoIs) {
-    		whoIs = newWhoIs;
-    		whoIsValue.update_retained();
+    		whoIsValue.update_r();
     	}
 
     	rgb.apply();
