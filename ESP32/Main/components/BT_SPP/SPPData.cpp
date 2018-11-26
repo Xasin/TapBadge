@@ -8,8 +8,6 @@
 #include "SPPData.h"
 #include "SPPServer.h"
 
-#include <cstring>
-
 namespace Bluetooth {
 
 SPP_Data::SPP_Data(SPP_Server &server, uint16_t id, void *data, size_t data_length) :
@@ -24,18 +22,18 @@ SPP_Data::SPP_Data(SPP_Server &server, uint16_t id) :
 }
 
 void SPP_Data::accept_data(const void *data, size_t length) {
-	if(!allow_write)
-		return;
-	if(length > data_length)
-		return;
+	if(allow_write) {
+		if(length > data_length)
+			return;
 
-	if((!allow_partial_write) && (length < data_length))
-		return;
+		if((!allow_partial_write) && (length < data_length))
+			return;
 
-	memcpy(this->data, data, length);
+		memcpy(this->data, data, length);
+	}
 
 	if(write_callback != nullptr)
-		write_callback();
+		write_callback(data, length);
 }
 
 void SPP_Data::on_reconnect() {

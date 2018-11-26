@@ -22,6 +22,7 @@
 
 #include "SPPServer.h"
 #include "SPPData.h"
+#include "SPPStream.h"
 
 #include "peripheral/batman.h"
 
@@ -97,9 +98,9 @@ extern "C" void app_main(void)
 
     Bluetooth::SPP_Server testServer = Bluetooth::SPP_Server();
 
-    auto whoIsValue = Bluetooth::SPP_Data(testServer, 65, &whoIs, sizeof(whoIs));
-    testServer.values[65] = &whoIsValue;
+    auto whoIsValue = Bluetooth::SPP_Data(testServer, 65, whoIs);
     whoIsValue.allow_write = true;
+    auto cmdStream = Bluetooth::SPP_Stream(testServer, 'B');
 
     for(uint8_t i=0; i<6; i++) {
 		rgb.fill(colors[i]);
@@ -109,7 +110,7 @@ extern "C" void app_main(void)
     rgb.clear();
     rgb.apply();
 
-    morse.word_callback = [&testData, &whoIs, &whoIsValue](std::string &word) {
+    morse.word_callback = [&cmdStream, &whoIs, &whoIsValue](std::string &word) {
     	if(word == "!off") {
     		rgb.fill(0); rgb.apply(); rgb.update();
 
@@ -117,7 +118,7 @@ extern "C" void app_main(void)
     		esp_deep_sleep_start();
     	}
 
-		testData += word + "\n";
+    	cmdStream.push(word);
 
 		uint8_t newWhoIs = whoIs;
 
@@ -131,7 +132,7 @@ extern "C" void app_main(void)
     		newWhoIs = 0;
 
     	if(newWhoIs != whoIs) {
-    		whoIsValue.update_r();
+    		whoIsValue.update_r(newWhoIs);
     	}
 
     	rgb.apply();

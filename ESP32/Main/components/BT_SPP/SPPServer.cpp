@@ -119,8 +119,6 @@ void SPP_Server::GAP_callback(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t
 	printf("SPP GAP evt no. %d\n", event);
 }
 void SPP_Server::SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) {
-	std::string boop = "Boop!";
-
 	switch(event) {
 	case ESP_SPP_INIT_EVT:
 		puts("SPP initialised!");
@@ -150,8 +148,6 @@ void SPP_Server::SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *para
 			this->decode_packet(inputBuffer.data(), newlinePos);
 			inputBuffer = inputBuffer.substr(newlinePos + 1);
 		}
-
-		this->write_packet('A', boop.data(), boop.size());
 	}
 	break;
 

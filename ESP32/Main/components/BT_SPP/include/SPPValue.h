@@ -16,11 +16,10 @@ namespace Bluetooth {
 class SPP_Server;
 
 class SPP_Value {
-private:
-	SPP_Server& server;
-
 protected:
 	friend SPP_Server;
+
+	SPP_Server& server;
 
 	virtual void accept_data(const void *data, size_t length);
 	virtual void on_reconnect();
@@ -30,7 +29,7 @@ public:
 
 	SPP_Value(SPP_Server& server, uint16_t id);
 
-	virtual bool write(void *data, size_t length);
+	virtual bool write(const void *data, size_t length);
 };
 
 } /* namespace Bluetooth */
