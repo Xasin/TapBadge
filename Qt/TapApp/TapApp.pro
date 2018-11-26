@@ -15,7 +15,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         main.cpp \
     tap_ble.cpp \
-    ble_handler.cpp
+    ble_handler.cpp \
+    spphandler.cpp
 
 RESOURCES += qml.qrc
 
@@ -32,7 +33,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     tap_ble.h \
-    ble_handler.h
+    ble_handler.h \
+    spphandler.h
 
 DISTFILES += \
     android/AndroidManifest.xml \
