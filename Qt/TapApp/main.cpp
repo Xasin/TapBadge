@@ -7,11 +7,16 @@
 
 #include "ble_handler.h"
 
+#include "spphandler.h"
+
 int main(int argc, char *argv[])
 {
 	QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
 	QGuiApplication app(argc, argv);
+
+	auto testSPP = new SPPHandler();
+	testSPP->find("Tap Badge");
 
 	auto badge = new Tap_BLE();
 
