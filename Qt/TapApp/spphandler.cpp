@@ -8,6 +8,8 @@ SPPHandler::SPPHandler(QObject *parent) : QObject(parent),
 {
 	connect(&SPP_socket, &QBluetoothSocket::readyRead, this,
 			  [this]() {
+		qDebug()<<"Munching some data!";
+
 		QByteArray currentData;
 		while((currentData = QByteArray::fromBase64(SPP_socket.readLine())).size() > 2) {
 			uint16_t id = *reinterpret_cast<uint16_t *>(currentData.data());
@@ -16,6 +18,7 @@ SPPHandler::SPPHandler(QObject *parent) : QObject(parent),
 			qDebug()<<"Received data ID:"<<id<<"rest:"<<currentData;
 		}
 	});
+	connect(&SPP_socket, &QBluetoothSocket::connected, this, []() {qDebug()<<"Socket connected!";});
 
 	connect(&SPP_device_discoverer, &QBluetoothDeviceDiscoveryAgent::deviceDiscovered, this,
 			  [this](const QBluetoothDeviceInfo &device) {
@@ -24,25 +27,13 @@ SPPHandler::SPPHandler(QObject *parent) : QObject(parent),
 			qDebug()<<"Found our device!";
 
 			this->SPP_target_addr = device.address();
-			//raw_start_connect();
-		}
-	});
-
-	connect(&SPP_service_discoverer, &QBluetoothServiceDiscoveryAgent::serviceDiscovered, this,
-			  [this](const QBluetoothServiceInfo &service) {
-		qDebug()<<"Found a service in:"<<service.device().name();
-		if(service.device().name() == targetName) {
-			SPP_service_discoverer.stop();
-
-			qDebug()<<"Found service!"<<service.serviceName();
-			if(service.serviceName() == "Serial Port Profile")
-				SPP_socket.connectToService(service);
+			raw_start_connect();
 		}
 	});
 }
 
 void SPPHandler::raw_start_connect() {
-	SPP_socket.connectToService(SPP_target_addr, 2);
+	SPP_socket.connectToService(SPP_target_addr, QBluetoothUuid::SerialPort);
 }
 
 bool SPPHandler::write_raw(uint16_t id, const QByteArray &data) {
@@ -59,7 +50,7 @@ bool SPPHandler::write_raw(uint16_t id, const QByteArray &data) {
 }
 
 void SPPHandler::find() {
-	SPP_service_discoverer.start(QBluetoothServiceDiscoveryAgent::FullDiscovery);
+	SPP_device_discoverer.start();
 }
 void SPPHandler::find(const QString &targetName) {
 	this->targetName = targetName;
