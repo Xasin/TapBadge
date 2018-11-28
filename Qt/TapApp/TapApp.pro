@@ -16,7 +16,8 @@ SOURCES += \
         main.cpp \
     tap_ble.cpp \
     ble_handler.cpp \
-    spphandler.cpp
+    spphandler.cpp \
+    sppvalue.cpp
 
 RESOURCES += qml.qrc
 
@@ -34,7 +35,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 HEADERS += \
     tap_ble.h \
     ble_handler.h \
-    spphandler.h
+    spphandler.h \
+    sppvalue.h
 
 DISTFILES += \
     android/AndroidManifest.xml \

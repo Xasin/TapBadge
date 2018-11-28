@@ -97,8 +97,4 @@ ApplicationWindow {
 			}
 		}
 	}
-
-	Component.onCompleted: {
-		tapBadge.ble_handler.initiate_find();
-	}
 }

@@ -8,6 +8,7 @@
 #include "ble_handler.h"
 
 #include "spphandler.h"
+#include "sppvalue.h"
 
 int main(int argc, char *argv[])
 {
@@ -17,6 +18,21 @@ int main(int argc, char *argv[])
 
 	auto testSPP = new SPPHandler();
 	testSPP->find("Tap Badge");
+
+	auto switchValue = new SPPValue(*testSPP, 65);
+	switchValue->receiveLambda = [](const QByteArray &data) {
+		qDebug()<<"Got new switch value"<<data;
+	};
+	auto msgValue = new SPPValue(*testSPP, 66);
+
+	const char whoIs = 2;
+	msgValue->receiveLambda = [&switchValue, &whoIs](const QByteArray &data) {
+		qDebug()<<"Got morsecode command:"<<QString::fromUtf8(data);
+
+		switchValue->writeData(QByteArray(&whoIs, 1));
+	};
+
+	switchValue->writeData(QByteArray(&whoIs, 1), true);
 
 	auto badge = new Tap_BLE();
 
