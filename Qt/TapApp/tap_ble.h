@@ -5,13 +5,14 @@
 
 #include <QtMqtt/QtMqtt>
 
-#include "ble_handler.h"
+#include "spphandler.h"
+#include "sppvalue.h"
 
 class Tap_BLE : public QObject
 {
 	Q_OBJECT
 
-	Q_PROPERTY(BLE_Handler *ble_handler READ getHandler)
+	Q_PROPERTY(SPPHandler *connHandler READ getHandler)
 
 	Q_PROPERTY(int batteryMV		READ getBatteryMV	NOTIFY deviceDataUpdated)
 	Q_PROPERTY(int batteryPercent READ getBatteryPercent NOTIFY deviceDataUpdated)
@@ -19,8 +20,11 @@ class Tap_BLE : public QObject
 	Q_PROPERTY(int whoIs				READ getWhoIs WRITE setWhoIs NOTIFY whoIsChanged)
 
 private:
+	SPPHandler connHandler;
 
-	BLE_Handler ble_handler;
+	SPPValue switchValue;
+	SPPValue cmdValue;
+	SPPValue batteryValue;
 
 	QMqttClient			mqtt_client;
 	QMqttSubscription *mqtt_sub_whoIs;
@@ -35,7 +39,7 @@ private:
 public:
 	explicit Tap_BLE(QObject *parent = nullptr);
 
-	BLE_Handler *getHandler();
+	SPPHandler *getHandler();
 
 	int getBatteryPercent();
 	int getBatteryMV();
@@ -48,7 +52,6 @@ signals:
 	void whoIsChanged();
 
 public slots:
-	void onProperties_updated();
 };
 
 #endif // TAP_BLE_H
