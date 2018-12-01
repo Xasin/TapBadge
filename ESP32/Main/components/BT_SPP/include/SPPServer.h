@@ -12,6 +12,9 @@
 #include <functional>
 #include <string>
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 #include "esp_bt.h"
 #include "esp_bt_main.h"
 #include "esp_bt_defs.h"
@@ -38,6 +41,9 @@ private:
 	std::string inputBuffer;
 
 	bool connected;
+	bool enabled;
+
+	uint64_t disconnectTick;
 
 protected:
 	friend SPP_Value;
@@ -45,15 +51,21 @@ protected:
 	void write_packet(uint16_t id, const void * data, const size_t length);
 	void decode_packet(const void *rawData, size_t length);
 
-public:
 	std::map<uint16_t, SPP_Value*> values;
+public:
+
+	TaskHandle_t onDisconnectHandle;
 
 	void SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param);
 	void GAP_callback(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *param);
 
 	SPP_Server();
 
+	void enable();
+	void disable();
+
 	bool is_connected();
+	uint64_t getDisconnectTick();
 };
 
 } /* namespace Bluetooth */

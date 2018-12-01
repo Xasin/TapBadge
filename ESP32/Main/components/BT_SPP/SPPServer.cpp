@@ -14,7 +14,6 @@
 
 #include "SPPServer.h"
 
-
 namespace Bluetooth {
 
 SPP_Server* SPP_Server::headServer = nullptr;
@@ -73,7 +72,12 @@ SPP_Server::SPP_Server() :
 		SPP_handle(-1),
 		inputBuffer(),
 		values() {
+
 	connected = false;
+	enabled = true;
+
+	disconnectTick = 0;
+	onDisconnectHandle = nullptr;
 
 	assert(headServer == nullptr);
 	headServer = this;
@@ -82,10 +86,11 @@ SPP_Server::SPP_Server() :
 
 	esp_err_t ret;
 
-	ret = esp_bt_controller_mem_release(ESP_BT_MODE_BLE);
-	ESP_ERROR_CHECK(ret);
+	//ret = esp_bt_controller_mem_release(ESP_BT_MODE_BLE);
+	//ESP_ERROR_CHECK(ret);
 
 	esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+	bt_cfg.mode = ESP_BT_MODE_CLASSIC_BT;
 	ret = esp_bt_controller_init(&bt_cfg);
 	ESP_ERROR_CHECK(ret);
 
@@ -125,6 +130,8 @@ void SPP_Server::SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *para
 		esp_bt_dev_set_device_name(device_name.data());
 		esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
 
+		esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
+
 		esp_spp_start_srv(ESP_SPP_SEC_NONE, ESP_SPP_ROLE_SLAVE, 0, device_name.data());
 	break;
 	case ESP_SPP_START_EVT:
@@ -132,9 +139,10 @@ void SPP_Server::SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *para
 	break;
 	case ESP_SPP_SRV_OPEN_EVT:
 		SPP_handle = param->start.handle;
-		puts("SPP open!");
+		puts("SPP connected!");
 
 		connected = true;
+		esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_NONE);
 
 		for(auto v : values)
 			v.second->on_reconnect();
@@ -152,7 +160,17 @@ void SPP_Server::SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *para
 	break;
 
 	case ESP_SPP_CLOSE_EVT:
+		puts("SPP disconnected!");
+		disconnectTick = xTaskGetTickCountFromISR();
 		connected = false;
+
+		if(onDisconnectHandle != nullptr)
+			xTaskNotifyFromISR(onDisconnectHandle, 0, eNoAction, nullptr);
+
+		if(enabled)
+			esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
+		else
+			disable();
 	break;
 	default:
 		printf("SPP unknown value: %d\n", int(event));
@@ -160,8 +178,39 @@ void SPP_Server::SPP_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *para
 	}
 }
 
+void SPP_Server::enable() {
+	if(enabled)
+		return;
+
+	puts("SPP: Enabling");
+	esp_bt_controller_enable(ESP_BT_MODE_CLASSIC_BT);
+	while(esp_bt_controller_get_status() != ESP_BT_CONTROLLER_STATUS_ENABLED)
+			vTaskDelay(1);
+	esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
+
+	enabled = true;
+}
+void SPP_Server::disable() {
+	if(!enabled)
+		return;
+
+	puts("SPP: Disabling");
+
+	enabled = false;
+
+	if(connected)
+		return;
+
+	esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_NONE);
+	vTaskDelay(100);
+	esp_bt_controller_disable();
+}
+
 bool SPP_Server::is_connected() {
 	return connected;
+}
+uint64_t SPP_Server::getDisconnectTick() {
+	return this->disconnectTick;
 }
 
 } /* namespace Bluetooth */
