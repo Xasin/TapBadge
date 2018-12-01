@@ -45,7 +45,10 @@ struct {
 	int16_t mvLevel;
 } batStat;
 #pragma pack()
+
 Peripheral::Batman *battery;
+
+Bluetooth::SPP_Server *spp_server;
 Bluetooth::SPP_Data *batteryHealthVal;
 
 esp_err_t event_handler(void *ctx, system_event_t *event)
@@ -60,12 +63,9 @@ void testTask(void * params) {
 			{Color(Material::BLUE, 50), 200000},
 	};
 
-	uint64_t lastAdvStart;
-	while(true) {
-		lastAdvStart = xTaskGetTickCount();
-		note.flash(btStart, 2);
-		vTaskDelay(5000);
+	spp_server->onDisconnectHandle = xTaskGetCurrentTaskHandle();
 
+	while(true) {
 		batStat.mvLevel = battery->read();
 		if(batStat.mvLevel > 4000)
 			batStat.chgLevel = 100;
@@ -75,6 +75,14 @@ void testTask(void * params) {
 			batStat.chgLevel = (batStat.mvLevel - 3600)*100 /(400);
 
 		batteryHealthVal->update_r();
+
+		spp_server->enable();
+		note.flash(btStart, 2);
+		vTaskDelay(4000);
+		xTaskNotifyWait(0, 0, nullptr, 2000/portMAX_DELAY);
+		spp_server->disable();
+
+		vTaskDelay(RECONNECT_TIME);
 	}
 }
 
@@ -92,9 +100,6 @@ extern "C" void app_main(void)
 	power_config.light_sleep_enable = true;
     esp_pm_configure(&power_config);
 
-    TaskHandle_t xHandle = NULL;
-    xTaskCreate(testTask, "TTask", 2048, NULL, 2, &xHandle);
-
     testPad = new Touch::Control(TOUCH_PAD_NUM0);
     testPad->charDetectHandle = morse.getDecodeHandle();
 
@@ -107,6 +112,7 @@ extern "C" void app_main(void)
     uint32_t colors[] = {Material::RED, Material::CYAN, Material::GREEN, Material::PURPLE, Material::BLUE, Material::ORANGE};
 
     Bluetooth::SPP_Server testServer = Bluetooth::SPP_Server();
+    spp_server = &testServer;
 
     auto whoIsValue = Bluetooth::SPP_Data(testServer, 65, whoIs);
     whoIsValue.allow_write = true;
@@ -121,6 +127,9 @@ extern "C" void app_main(void)
     }
     rgb.clear();
     rgb.apply();
+
+    TaskHandle_t xHandle = NULL;
+    xTaskCreate(testTask, "TTask", 2048, NULL, 2, &xHandle);
 
     morse.word_callback = [&cmdStream, &whoIs, &whoIsValue](std::string &word) {
     	if(word == "!off") {
