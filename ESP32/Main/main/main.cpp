@@ -39,9 +39,14 @@ Peripheral::NotifyHandler note = Peripheral::NotifyHandler(&rgb);
 Peripheral::MorseHandle morse = Peripheral::MorseHandle(120);
 Touch::Control *testPad;
 
+#pragma pack(1)
+struct {
+	int8_t  chgLevel;
+	int16_t mvLevel;
+} batStat;
+#pragma pack()
 Peripheral::Batman *battery;
-
-uint16_t batLvl;
+Bluetooth::SPP_Data *batteryHealthVal;
 
 esp_err_t event_handler(void *ctx, system_event_t *event)
 {
@@ -60,12 +65,17 @@ void testTask(void * params) {
 		lastAdvStart = xTaskGetTickCount();
 		note.flash(btStart, 2);
 		vTaskDelay(5000);
-	}
-}
 
-template<typename T>
-size_t getSizeOf() {
-	return sizeof(T);
+		batStat.mvLevel = battery->read();
+		if(batStat.mvLevel > 4000)
+			batStat.chgLevel = 100;
+		else if(batStat.mvLevel < 3600)
+			batStat.chgLevel = -1;
+		else
+			batStat.chgLevel = (batStat.mvLevel - 3600)*100 /(400);
+
+		batteryHealthVal->update_r();
+	}
 }
 
 extern "C" void app_main(void)
@@ -100,7 +110,9 @@ extern "C" void app_main(void)
 
     auto whoIsValue = Bluetooth::SPP_Data(testServer, 65, whoIs);
     whoIsValue.allow_write = true;
-    auto cmdStream = Bluetooth::SPP_Stream(testServer, 'B');
+    auto cmdStream = Bluetooth::SPP_Stream(testServer, 66);
+
+    batteryHealthVal = new Bluetooth::SPP_Data(testServer, 0xF001, batStat);
 
     for(uint8_t i=0; i<6; i++) {
 		rgb.fill(colors[i]);
@@ -159,8 +171,6 @@ extern "C" void app_main(void)
 			{0, 500000}};
 
     while (true) {
-    	batLvl = battery->read();
-
     	touchVal = testPad->read_raw();
 
     	switch(whoIs) {

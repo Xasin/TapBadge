@@ -64,6 +64,21 @@ Tap_BLE::Tap_BLE(QObject *parent) :
 	cmdValue.receiveLambda = [this](const QByteArray &data) {
 		this->mqtt_client.publish(QString("Personal/Xasin/Room/default/Commands"), data, 2);
 	};
+	batteryValue.receiveLambda = [this](const QByteArray &data) {
+#pragma pack(1)
+		struct BatteryPacket {
+			int8_t  charge;
+			int16_t mvLevel;
+		};
+#pragma pack()
+
+		BatteryPacket bat = *(reinterpret_cast<const BatteryPacket*>(data.data()));
+
+		this->batteryMV = bat.mvLevel;
+		this->batteryPercent = bat.charge;
+
+		emit deviceDataUpdated();
+	};
 
 	mqtt_client.setCleanSession(false);
 	mqtt_client.setClientId("XasPhone_TapApp");
