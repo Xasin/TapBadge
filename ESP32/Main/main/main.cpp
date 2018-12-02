@@ -80,7 +80,7 @@ void testTask(void * params) {
 		note.flash(btStart, 2);
 		vTaskDelay(4000);
 		xTaskNotifyWait(0, 0, nullptr, 2000/portMAX_DELAY);
-		spp_server->disable();
+		//spp_server->disable();
 
 		vTaskDelay(RECONNECT_TIME);
 	}
