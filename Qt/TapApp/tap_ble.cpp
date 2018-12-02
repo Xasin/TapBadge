@@ -87,8 +87,6 @@ Tap_BLE::Tap_BLE(QObject *parent) :
 	mqtt_client.setKeepAlive(10000);
 
 	mqtt_client.connectToHost();
-
-	connHandler.find("Tap Badge");
 }
 
 SPPHandler * Tap_BLE::getHandler() {

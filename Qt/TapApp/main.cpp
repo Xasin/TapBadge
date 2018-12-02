@@ -12,20 +12,31 @@
 
 int main(int argc, char *argv[])
 {
+	qDebug()<<"BACKGROUND!";
+
 	QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
-	QGuiApplication app(argc, argv);
+	if(QCoreApplication::arguments().count() > 1) {
+			QCoreApplication app(argc, argv);
 
-	auto badge = new Tap_BLE();
+			auto badge = new Tap_BLE();
+			badge->getHandler()->find("Tap Badge");
 
-	QQmlApplicationEngine engine;
+			return app.exec();
+	}
+	else {
+		QGuiApplication app(argc, argv);
+		QQmlApplicationEngine engine;
 
-	qmlRegisterUncreatableType<BLE_Handler>("com.xasin.tap", 1, 0, "BLE_Handler", "");
-	engine.rootContext()->setContextProperty("tapBadge", badge);
+		auto badge = new Tap_BLE();
 
-	engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
-	if (engine.rootObjects().isEmpty())
-		return -1;
+		qmlRegisterUncreatableType<BLE_Handler>("com.xasin.tap", 1, 0, "BLE_Handler", "");
+		engine.rootContext()->setContextProperty("tapBadge", badge);
 
-	return app.exec();
+		engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
+		if (engine.rootObjects().isEmpty())
+			return -1;
+
+		return app.exec();
+	}
 }
