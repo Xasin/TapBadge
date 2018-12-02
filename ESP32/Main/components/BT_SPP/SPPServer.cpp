@@ -86,8 +86,8 @@ SPP_Server::SPP_Server() :
 
 	esp_err_t ret;
 
-	//ret = esp_bt_controller_mem_release(ESP_BT_MODE_BLE);
-	//ESP_ERROR_CHECK(ret);
+	ret = esp_bt_controller_mem_release(ESP_BT_MODE_BLE);
+	ESP_ERROR_CHECK(ret);
 
 	esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
 	bt_cfg.mode = ESP_BT_MODE_CLASSIC_BT;
