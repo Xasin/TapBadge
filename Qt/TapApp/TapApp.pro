@@ -1,4 +1,4 @@
-QT += qml quick bluetooth mqtt
+QT += qml quick bluetooth mqtt androidextras
 CONFIG += c++11
 
 # The following define makes your compiler emit warnings if you use
@@ -46,6 +46,7 @@ DISTFILES += \
     android/build.gradle \
     android/gradle/wrapper/gradle-wrapper.properties \
     android/gradlew.bat \
-    ServiceStarter.java
+    ServiceStarter.java \
+    android/src/com/xasin/ServiceStarter.java
 
 ANDROID_PACKAGE_SOURCE_DIR = $$PWD/android

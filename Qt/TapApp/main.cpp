@@ -1,6 +1,10 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 
+#include <QAndroidService>
+#include <QAndroidJniObject>
+#include <QtAndroid>
+
 #include <QQmlContext>
 
 #include "tap_ble.h"
@@ -14,10 +18,8 @@ int main(int argc, char *argv[])
 {
 	qDebug()<<"BACKGROUND!";
 
-	QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-
-	if(QCoreApplication::arguments().count() > 1) {
-			QCoreApplication app(argc, argv);
+	if(QAndroidService::arguments().count() > 1) {
+			QAndroidService app(argc, argv);
 
 			auto badge = new Tap_BLE();
 			badge->getHandler()->find("Tap Badge");
@@ -26,8 +28,14 @@ int main(int argc, char *argv[])
 	}
 	else {
 		QGuiApplication app(argc, argv);
+		QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+
 		QQmlApplicationEngine engine;
 
+		QAndroidJniObject::callStaticMethod<void>("com/xasin/ServiceStarter",
+																	 "startMyService",
+																	 "(Landroid/content/Context;)V",
+																	 QtAndroid::androidActivity().object());
 		auto badge = new Tap_BLE();
 
 		qmlRegisterUncreatableType<BLE_Handler>("com.xasin.tap", 1, 0, "BLE_Handler", "");
