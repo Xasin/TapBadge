@@ -76,7 +76,8 @@ void testTask(void * params) {
 
 		batteryHealthVal->update_r();
 
-		spp_server->enable();
+		//spp_server->enable();
+
 		note.flash(btStart, 2);
 		vTaskDelay(4000);
 		xTaskNotifyWait(0, 0, nullptr, 2000/portMAX_DELAY);
@@ -114,6 +115,8 @@ extern "C" void app_main(void)
     Bluetooth::SPP_Server testServer = Bluetooth::SPP_Server();
     spp_server = &testServer;
 
+    testServer.disable();
+
     auto whoIsValue = Bluetooth::SPP_Data(testServer, 65, whoIs);
     whoIsValue.allow_write = true;
     auto cmdStream = Bluetooth::SPP_Stream(testServer, 66);
@@ -133,6 +136,9 @@ extern "C" void app_main(void)
 
     morse.word_callback = [&cmdStream, &whoIs, &whoIsValue](std::string &word) {
     	if(word == "!off") {
+    		NotifyHandler::PatternElement offP[] = {{Material::RED, 500000}};
+    		note.flash(offP, 1);
+
     		rgb.fill(0); rgb.apply(); rgb.update();
 
     		esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
