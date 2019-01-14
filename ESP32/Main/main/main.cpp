@@ -14,17 +14,17 @@
 #include "driver/ledc.h"
 #include "driver/touch_pad.h"
 
+#include "RegisterBlock.h"
+#include "BLESlaveChannel.h"
+
 #include "Control.h"
 #include "MorseHandle.h"
 
 #include "NeoController.h"
 #include "NotifyHandler.h"
 
-#include "SPPServer.h"
-#include "SPPData.h"
-#include "SPPStream.h"
-
 #include "peripheral/batman.h"
+#include "BatteryManager.h"
 
 #include <sstream>
 #include <string.h>
@@ -33,11 +33,14 @@
 
 using namespace Peripheral;
 
+auto mainRegisters = Xasin::Communication::RegisterBlock();
+auto ble_channel   = Xasin::Communication::BLE_SlaveChannel("Tap Badge", mainRegisters);
+
 Peripheral::NeoController rgb  = Peripheral::NeoController(GPIO_NUM_5, RMT_CHANNEL_0, 1);
 Peripheral::NotifyHandler note = Peripheral::NotifyHandler(&rgb);
 
 Peripheral::MorseHandle morse = Peripheral::MorseHandle(120);
-Touch::Control *testPad;
+Touch::Control 			*testPad;
 
 #pragma pack(1)
 struct {
@@ -47,9 +50,7 @@ struct {
 #pragma pack()
 
 Peripheral::Batman *battery;
-
-Bluetooth::SPP_Server *spp_server;
-Bluetooth::SPP_Data *batteryHealthVal;
+auto batteryEval = Housekeeping::BatteryManager();
 
 esp_err_t event_handler(void *ctx, system_event_t *event)
 {
@@ -58,30 +59,22 @@ esp_err_t event_handler(void *ctx, system_event_t *event)
 
 void testTask(void * params) {
 	vTaskDelay(500/portTICK_PERIOD_MS);
-	NotifyHandler::PatternElement btStart[] = {
-			{Color(Material::BLUE, 100), 100000},
-			{Color(Material::BLUE, 50), 200000},
-	};
 
-	spp_server->onDisconnectHandle = xTaskGetCurrentTaskHandle();
+	auto batRegister   = Xasin::Communication::ComRegister('BT', mainRegisters, &batStat, sizeof(batStat));
 
 	while(true) {
 		batStat.mvLevel = battery->read();
-		if(batStat.mvLevel > 4000)
-			batStat.chgLevel = 100;
-		else if(batStat.mvLevel < 3600)
-			batStat.chgLevel = -1;
-		else
-			batStat.chgLevel = (batStat.mvLevel - 3600)*100 /(400);
+		batStat.chgLevel = batteryEval.capacity_for_voltage(batStat.mvLevel);
 
-		batteryHealthVal->update_r();
+		batRegister.update();
+		printf("VBat: %4d (%3d%%)\n", batStat.mvLevel, batStat.chgLevel);
 
-		//spp_server->enable();
+		NotifyHandler::PatternElement btStart[] = {
+				{Color(Material::RED).merge_overlay(Material::GREEN, batStat.chgLevel * 2.5).bMod(100), 100000},
+				{Color(Material::RED).merge_overlay(Material::GREEN, batStat.chgLevel * 2.5).bMod(50), 200000},
+		};
 
 		note.flash(btStart, 2);
-		vTaskDelay(4000);
-		xTaskNotifyWait(0, 0, nullptr, 2000/portMAX_DELAY);
-		//spp_server->disable();
 
 		vTaskDelay(RECONNECT_TIME);
 	}
@@ -101,6 +94,8 @@ extern "C" void app_main(void)
 	power_config.light_sleep_enable = true;
     esp_pm_configure(&power_config);
 
+    ble_channel.start();
+
     testPad = new Touch::Control(TOUCH_PAD_NUM0);
     testPad->charDetectHandle = morse.getDecodeHandle();
 
@@ -110,18 +105,10 @@ extern "C" void app_main(void)
     char whoIs = 0;
     uint8_t touchVal;
 
+    auto whoIsRegister = Xasin::Communication::ComRegister('sw', mainRegisters, &whoIs, 1, true);
+    auto morseRegister = Xasin::Communication::ComRegister('hi', mainRegisters);
+
     uint32_t colors[] = {Material::RED, Material::CYAN, Material::GREEN, Material::PURPLE, Material::BLUE, Material::ORANGE};
-
-    Bluetooth::SPP_Server testServer = Bluetooth::SPP_Server();
-    spp_server = &testServer;
-
-    testServer.disable();
-
-    auto whoIsValue = Bluetooth::SPP_Data(testServer, 65, whoIs);
-    whoIsValue.allow_write = true;
-    auto cmdStream = Bluetooth::SPP_Stream(testServer, 66);
-
-    batteryHealthVal = new Bluetooth::SPP_Data(testServer, 0xF001, batStat);
 
     for(uint8_t i=0; i<6; i++) {
 		rgb.fill(colors[i]);
@@ -134,7 +121,7 @@ extern "C" void app_main(void)
     TaskHandle_t xHandle = NULL;
     xTaskCreate(testTask, "TTask", 2048, NULL, 2, &xHandle);
 
-    morse.word_callback = [&cmdStream, &whoIs, &whoIsValue](std::string &word) {
+    morse.word_callback = [&whoIs, &whoIsRegister, &morseRegister](std::string &word) {
     	if(word == "!off") {
     		NotifyHandler::PatternElement offP[] = {{Material::RED, 500000}};
     		note.flash(offP, 1);
@@ -145,9 +132,9 @@ extern "C" void app_main(void)
     		esp_deep_sleep_start();
     	}
 
-    	cmdStream.push(word);
-
 		uint8_t newWhoIs = whoIs;
+
+		morseRegister.update(word);
 
     	if(word == "x")
     		newWhoIs = 1;
@@ -159,7 +146,8 @@ extern "C" void app_main(void)
     		newWhoIs = 0;
 
     	if(newWhoIs != whoIs) {
-    		whoIsValue.update_r(newWhoIs);
+    		whoIs = newWhoIs;
+    		whoIsRegister.update();
     	}
 
     	rgb.apply();
