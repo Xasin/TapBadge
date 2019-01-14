@@ -19,11 +19,11 @@ void NotifyHandler::flash(PatternElement * const pattern, uint8_t num) {
 	Color oldC = *(rgb->get(0));
 
 	for(uint8_t i=0; i<num; i++) {
-		(*rgb)[0]->set(pattern[i].tColor);
+		(*rgb)[0].set(pattern[i].tColor);
 		rgb->fadeTransition(pattern[i].fadeDuration);
 	}
 
-	(*rgb)[0]->set(oldC);
+	(*rgb)[0] = oldC;
 	rgb->fadeTransition(30000);
 
 	release();
