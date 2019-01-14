@@ -1,4 +1,5 @@
 (sym_lib_table
   (lib (name FS8205)(type Legacy)(uri "/home/xasin/Xasin/TapBadge/KiCad /TapBadge/FS8205.lib")(options "")(descr ""))
   (lib (name FS312F-G)(type Legacy)(uri ${KIPRJMOD}/FS312F-G.lib)(options "")(descr ""))
+  (lib (name TapBadge-rescue)(type Legacy)(uri ${KIPRJMOD}/TapBadge-rescue.lib)(options "")(descr ""))
 )

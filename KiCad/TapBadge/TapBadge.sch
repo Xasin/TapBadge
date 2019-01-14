@@ -15,7 +15,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L esp32pico_d4:ESP32PICO_D4 ESP1
+L TapBadge-rescue:ESP32PICO_D4-esp32pico_d4 ESP1
 U 1 1 5B93C22A
 P 6225 4675
 F 0 "ESP1" H 8166 5528 60  0000 L CNN

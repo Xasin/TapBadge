@@ -40,7 +40,7 @@ F 1 "SPX3819M5-L-3-3" H 6350 4426 50  0000 C CNN
 F 2 "Package_TO_SOT_SMD:SOT-23-5" H 6350 4500 50  0001 C CNN
 F 3 "https://www.exar.com/content/document.ashx?id=22106&languageid=1033&type=Datasheet&partnumber=SPX3819&filename=SPX3819.pdf&part=SPX3819" H 6350 4175 50  0001 C CNN
 F 4 "https://lcsc.com/product-detail/Low-Dropout-Regulators-LDO_EXAR_SPX3819M5-L-3-3-TR_SPX3819M5-L-3-3-TR_C9055.html" H 6350 4175 50  0001 C CNN "URL"
-F 5 "C183096" H 6350 4175 50  0001 C CNN "LCSC"
+F 5 "C9055" H 6350 4175 50  0001 C CNN "LCSC"
 	1    6350 4175
 	1    0    0    -1  
 $EndComp
