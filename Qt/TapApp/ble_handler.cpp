@@ -2,26 +2,17 @@
 
 BLE_Handler::BLE_Handler(QObject *parent) : QObject(parent),
 	connection_status(DISCONNECTED),
-	connection_interval(10000), resynch_tries(0),
-	reconnect_timer(this), disconnect_timer(this),
+	resynch_tries(0),
+	reconnect_timer(this),
 	target_name("Tap Badge"),
-	BLE_discoveryAgent(this), BLE_device(nullptr),
-	raw_data_map(), raw_write_map()
+	BLE_discoveryAgent(this), BLE_device(nullptr)
 {
-	reconnect_timer.setSingleShot(true);
-	connect(&reconnect_timer, &QTimer::timeout,
-			  this, &BLE_Handler::timer_task);
-
-	disconnect_timer.setSingleShot(true);
-	connect(&disconnect_timer, &QTimer::timeout,
-			  this, &BLE_Handler::timer_task);
-
 	connect(&BLE_discoveryAgent, &QBluetoothDeviceDiscoveryAgent::deviceDiscovered,
 			  this, [this](const QBluetoothDeviceInfo &device) {
 		qDebug()<<"Found device:"<<device.name()<<" - "<<device.address();
 		if(device.name() == target_name) {
 			BLE_discoveryAgent.stop();
-			initial_connect(device);
+			connect_to(device);
 		}
 	});
 }
@@ -36,7 +27,7 @@ void BLE_Handler::update_status(CONNECTION_STATUS nStatus) {
 	emit connectionStatusUpdated();
 }
 
-void BLE_Handler::initial_connect(const QBluetoothDeviceInfo &device) {
+void BLE_Handler::connect_to(const QBluetoothDeviceInfo &device) {
 	qDebug()<<"Setting up device:"<<device.name();
 
 	if(BLE_device != nullptr)
@@ -45,84 +36,57 @@ void BLE_Handler::initial_connect(const QBluetoothDeviceInfo &device) {
 
 	connect(BLE_device, &QLowEnergyController::connected,
 			  this, [this]() {
-		update_status(SYNCHED_CONNECTED);
+		update_status(CONNECTED);
 		resynch_tries = 0;
 
 		BLE_device->discoverServices();
-		disconnect_timer.start(3000);
 
-		qDebug()<<"Device connected!";
+		qDebug()<<"Device connected, discovering services...";
 	});
 
 	connect(BLE_device, &QLowEnergyController::serviceDiscovered,
 			  this, [this](const QBluetoothUuid &UUID) {
-		auto service = BLE_device->createServiceObject(UUID);
+		if(UUID != QBluetoothUuid(quint32('XSPP')))
+			return;
 
-		connect(service, &QLowEnergyService::stateChanged,
-				  this, [this, service](QLowEnergyService::ServiceState s) {
+		if(BLE_dataService != nullptr)
+			delete BLE_dataService;
+
+		BLE_dataService = BLE_device->createServiceObject(UUID);
+
+		connect(BLE_dataService, &QLowEnergyService::stateChanged,
+				  this, [this](QLowEnergyService::ServiceState s) {
+
 			if(s == QLowEnergyService::ServiceDiscovered) {
-				for(auto c : service->characteristics()) {
-					qDebug()<<"CHARACTERISTIC "<<c.uuid()<<" written!";
-					raw_data_map[c.uuid()] = c.value();
-					if(raw_write_map.contains(c.uuid())) {
-						service->writeCharacteristic(c, raw_write_map[c.uuid()]);
-						raw_write_map.remove(c.uuid());
-					}
-				}
+				BLE_dataChar = BLE_dataService->characteristic(QBluetoothUuid(quint32('XSPP')));
+
+				connect(BLE_dataService, &QLowEnergyService::characteristicChanged,
+						  this, &BLE_Handler::handle_receive);
+
+				BLE_dataService->writeDescriptor(BLE_dataChar.descriptor(QBluetoothUuid::ClientCharacteristicConfiguration), QByteArray::fromHex("0100"));
 			}
 		});
-
-		service->discoverDetails();
 	});
 
-	initiate_reconnect();
+	BLE_device->connectToDevice();
 }
-void BLE_Handler::initiate_reconnect() {
-	qDebug()<<"Initiating reconnect...";
 
-	if(BLE_device == nullptr)
+void BLE_Handler::handle_receive(QLowEnergyCharacteristic c, const QByteArray &data) {
+	if(c != BLE_dataChar)
 		return;
 
-	update_status(SYNCHED_CONNECTING);
-	BLE_device->connectToDevice();
-	reconnect_timer.start(connection_interval);
-	emit timerUpdated();
-}
+	if(data.length() < 2)
+		return;
 
+	quint16 ID = *reinterpret_cast<const quint16*>(data.data());
+	QByteArray cutData = QByteArray::fromRawData(data.data() + 2, data.length() - 2);
 
-void BLE_Handler::timer_task() {
-	qDebug()<<"Timer Thread called!";
-	switch(connection_status) {
-	case DISCONNECTED: break;
-	case FINDING:
-		update_status(DISCONNECTED);
-	break;
+	qDebug()<<"BLE Received signal from"<<ID<<"DATA: "<<cutData;
 
-	case SYNCHED_CONNECTING:
-		update_status(ATTEMPTING_RESYNCH);
-	case ATTEMPTING_RESYNCH:
-		qDebug()<<"Attempting resynch...";
+	if(data_cb.count(ID) > 0)
+		data_cb.find(ID).value()(cutData);
 
-		if(++resynch_tries >= 3) {
-			update_status(DISCONNECTED);
-			qDebug()<<"Connection lost!";
-		}
-		else
-			initiate_find();
-	break;
-
-	case SYNCHED_PAUSE:
-		initiate_reconnect();
-	break;
-	case SYNCHED_CONNECTED:
-		qDebug()<<"Finished update, disconnecting!";
-
-		BLE_device->disconnectFromDevice();
-		update_status(SYNCHED_PAUSE);
-		emit properties_updated();
-	break;
-
-	}
+	emit data_received(ID, cutData);
 }
 
 void BLE_Handler::initiate_find(QString targetDevice) {
@@ -131,19 +95,13 @@ void BLE_Handler::initiate_find(QString targetDevice) {
 	if(targetDevice != "")
 		target_name = targetDevice;
 
-	if(connection_status == SYNCHED_CONNECTED) {
+	if(connection_status != DISCONNECTED)
 		BLE_device->disconnectFromDevice();
-		update_status(FINDING);
-	}
 
-	if(connection_status == DISCONNECTED)
-		update_status(FINDING);
+	update_status(FINDING);
 
-	BLE_discoveryAgent.setLowEnergyDiscoveryTimeout(connection_interval);
+	BLE_discoveryAgent.setLowEnergyDiscoveryTimeout(10000);
 	BLE_discoveryAgent.start(QBluetoothDeviceDiscoveryAgent::LowEnergyMethod);
-
-	reconnect_timer.start(connection_interval);
-	emit timerUpdated();
 }
 
 BLE_Handler::CONNECTION_STATUS BLE_Handler::getConnectionStatus() {
@@ -153,16 +111,14 @@ int BLE_Handler::getRemainingTimer() {
 	return this->reconnect_timer.remainingTime();
 }
 
-QByteArray * BLE_Handler::get_data(QBluetoothUuid key) {
-	if(raw_data_map.contains(key)) {
-		return &(raw_data_map[key]);
-	}
+void BLE_Handler::write_data(quint16 ID, const QByteArray &data) {
+	if(connection_status != CONNECTED)
+		return;
+	if(BLE_dataService == nullptr)
+		return;
 
-	return nullptr;
-}
-void BLE_Handler::write_data(QBluetoothUuid key, QByteArray &data) {
-	raw_write_map.insert(key, data);
-}
-void BLE_Handler::clear_data(QBluetoothUuid key) {
-	raw_write_map.remove(key);
+	QByteArray outData = QByteArray::fromRawData(reinterpret_cast<const char *>(&ID), 2);
+	outData.append(data);
+
+	BLE_dataService->writeCharacteristic(BLE_dataChar, outData);
 }

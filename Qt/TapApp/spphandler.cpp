@@ -41,7 +41,7 @@ SPPHandler::SPPHandler(QObject *parent) : QObject(parent),
 
 			this->SPP_target_addr = device.address();
 
-			raw_start_connect();
+			//raw_start_connect();
 		}
 	});
 }
@@ -50,7 +50,7 @@ void SPPHandler::raw_start_connect() {
 	if(SPP_target_addr.isNull())
 		return;
 
-	SPP_socket.connectToService(SPP_target_addr, QBluetoothUuid::SerialPort);
+	//SPP_socket.connectToService(SPP_target_addr, QBluetoothUuid::SerialPort);
 	update_connection(RECONNECTING);
 }
 void SPPHandler::update_connection(CONNECTION_STATUS newStatus) {
@@ -87,5 +87,5 @@ void SPPHandler::find(const QString &targetName) {
 	update_connection(FINDING);
 
 	this->targetName = targetName;
-	SPP_device_discoverer.start();
+	//SPP_device_discoverer.start();
 }
