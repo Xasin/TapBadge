@@ -46,11 +46,15 @@ void BLE_Handler::connect_to(const QBluetoothDeviceInfo &device) {
 
 	connect(BLE_device, &QLowEnergyController::serviceDiscovered,
 			  this, [this](const QBluetoothUuid &UUID) {
-		if(UUID != QBluetoothUuid(quint32('XSPP')))
+		qDebug()<<"Found service:"<<UUID;
+
+		if(UUID != QBluetoothUuid(quint32(0x58535050)))
 			return;
 
 		if(BLE_dataService != nullptr)
 			delete BLE_dataService;
+
+		qDebug()<<"Wiring up the service!";
 
 		BLE_dataService = BLE_device->createServiceObject(UUID);
 
@@ -58,7 +62,7 @@ void BLE_Handler::connect_to(const QBluetoothDeviceInfo &device) {
 				  this, [this](QLowEnergyService::ServiceState s) {
 
 			if(s == QLowEnergyService::ServiceDiscovered) {
-				BLE_dataChar = BLE_dataService->characteristic(QBluetoothUuid(quint32('XSPP')));
+				BLE_dataChar = BLE_dataService->characteristic(QBluetoothUuid(quint32(0x58535050)));
 
 				connect(BLE_dataService, &QLowEnergyService::characteristicChanged,
 						  this, &BLE_Handler::handle_receive);
@@ -66,12 +70,15 @@ void BLE_Handler::connect_to(const QBluetoothDeviceInfo &device) {
 				BLE_dataService->writeDescriptor(BLE_dataChar.descriptor(QBluetoothUuid::ClientCharacteristicConfiguration), QByteArray::fromHex("0100"));
 			}
 		});
+
+		BLE_dataService->discoverDetails();
 	});
 
 	BLE_device->connectToDevice();
 }
 
 void BLE_Handler::handle_receive(QLowEnergyCharacteristic c, const QByteArray &data) {
+	qDebug()<<"Receiving data from"<<c.uuid()<<"DATA:"<<data;
 	if(c != BLE_dataChar)
 		return;
 

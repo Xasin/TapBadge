@@ -1,9 +1,10 @@
+
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 
-#include <QAndroidService>
-#include <QAndroidJniObject>
-#include <QtAndroid>
+//#include <QAndroidService>
+//#include <QAndroidJniObject>
+//#include <QtAndroid>
 
 #include <QQmlContext>
 
@@ -18,7 +19,7 @@ int main(int argc, char *argv[])
 {
 	qDebug()<<"BACKGROUND!";
 
-	QAndroidService app(argc, argv);
+	/*QAndroidService app(argc, argv);
 
 	if(QAndroidService::arguments().count() > 1) {
 			auto badge = new Tap_BLE();
@@ -30,7 +31,7 @@ int main(int argc, char *argv[])
 		QAndroidJniObject::callStaticMethod<void>("com/xasin/ServiceStarter",
 																	 "startMyService",
 																	 "(Landroid/content/Context;)V",
-																	 QtAndroid::androidActivity().object());
+																	 QtAndroid::androidActivity().object());*/
 
 		QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
@@ -50,5 +51,5 @@ int main(int argc, char *argv[])
 			return -1;
 
 		return app.exec();
-	}
+	//}
 }
