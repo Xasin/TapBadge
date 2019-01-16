@@ -2,9 +2,7 @@
 
 Tap_BLE::Tap_BLE(QObject *parent) :
 	QObject(parent),
-	connHandler(),
-	switchValue(connHandler,  65), cmdValue(connHandler, 66),
-	batteryValue(connHandler, 0xF001),
+	connHandler(this),
 	mqtt_client(this), mqtt_sub_whoIs(nullptr), mqtt_reconnet(this),
 	batteryPercent(0), batteryMV(0),
 	deviceWhoIs(0), whoIs(0)
@@ -51,20 +49,20 @@ Tap_BLE::Tap_BLE(QObject *parent) :
 
 			this->whoIs = whoIsCode;
 
-			switchValue.writeData(QByteArray(reinterpret_cast<char *>(&whoIs), 1), true);
+			connHandler.write_data('sw', QByteArray(reinterpret_cast<char *>(&whoIs), 1));
 
 			emit whoIsChanged();
 		});
 	});
 
-	switchValue.receiveLambda = [this](const QByteArray &data) {
+	connHandler.data_cb['sw'] = [this](const QByteArray &data) {
 		char whoIsNo = *data.data();
 		this->setWhoIs(whoIsNo);
 	};
-	cmdValue.receiveLambda = [this](const QByteArray &data) {
+	connHandler.data_cb['hi'] = [this](const QByteArray &data) {
 		this->mqtt_client.publish(QString("Personal/Xasin/Room/default/Commands"), data, 2);
 	};
-	batteryValue.receiveLambda = [this](const QByteArray &data) {
+	connHandler.data_cb['BT'] = [this](const QByteArray &data) {
 #pragma pack(1)
 		struct BatteryPacket {
 			int8_t  charge;
@@ -87,9 +85,17 @@ Tap_BLE::Tap_BLE(QObject *parent) :
 	mqtt_client.setKeepAlive(10000);
 
 	mqtt_client.connectToHost();
+
+	connHandler.initiate_find("Tap Badge");
 }
 
-SPPHandler * Tap_BLE::getHandler() {
+void Tap_BLE::m_pub(QString topic, const void *data_ptr, int length, bool retain) {
+	mqtt_client.publish("Personal/Xasin/Tap" + topic,
+							  QByteArray::fromRawData(reinterpret_cast<const char *>(data_ptr), length),
+							  1, retain);
+}
+
+BLE_Handler * Tap_BLE::getHandler() {
 	return &(this->connHandler);
 }
 
@@ -110,7 +116,7 @@ void Tap_BLE::setWhoIs(int whoIs) {
 		return;
 
 	this->whoIs = whoIs;
-	switchValue.writeData(QByteArray(reinterpret_cast<char *>(&whoIs), 1), true);
+	connHandler.write_data('sw', QByteArray(reinterpret_cast<char *>(&whoIs), 1));
 
 	QString whoIsNames[] = {"none", "Xasin", "Neira", "Mesh"};
 	mqtt_client.publish(QString("Personal/Xasin/Switching/Who"), whoIsNames[whoIs].toUtf8(), 1, true);

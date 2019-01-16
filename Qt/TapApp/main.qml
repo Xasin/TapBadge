@@ -89,6 +89,11 @@ ApplicationWindow {
 
 				ProgressBar {
 					value: tapBadge.batteryPercent / 100;
+
+					Behavior on value {
+						SmoothedAnimation {duration: 1000}
+					}
+
 					anchors.bottom: parent.bottom
 					width: parent.width
 

@@ -38,9 +38,6 @@ int main(int argc, char *argv[])
 		QGuiApplication app(argc, argv);
 		QQmlApplicationEngine engine;
 
-		auto testCode = new BLE_Handler();
-		testCode->initiate_find("Tap Badge");
-
 		auto badge = new Tap_BLE();
 
 		qmlRegisterUncreatableType<BLE_Handler>("com.xasin.tap", 1, 0, "BLE_Handler", "");

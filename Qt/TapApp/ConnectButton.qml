@@ -12,62 +12,6 @@ import com.xasin.tap 1.0
 Item {
 	id: rootItem
 
-	Shape {
-		anchors.centerIn: parent;
-
-		z: 1
-
-		antialiasing: true
-
-		ShapePath {
-			id: countdownPath
-
-			capStyle: ShapePath.RoundCap
-
-			fillColor: "transparent"
-
-			strokeStyle: ShapePath.SolidLine
-			strokeWidth: 6
-			strokeColor: Material.accent
-
-			startX: 0
-			startY: 0
-
-			PathAngleArc {
-				id: countdownPathArc
-				centerX: 0
-				centerY: 0
-
-				radiusX: Math.min(rootItem.width, rootItem.height)/2;
-				radiusY: radiusX
-
-				property real fillAngle;
-
-				Behavior on fillAngle {
-					SmoothedAnimation {duration: 100}
-				}
-
-				startAngle: 90 - fillAngle/2;
-				sweepAngle: fillAngle;
-			}
-		}
-
-		NumberAnimation {
-			target: countdownPathArc
-			property: "fillAngle"
-			id: countdownAnimation
-			from: 360
-			to: 0
-			duration: tapBadge.ble_handler.remainingReconnectTime
-
-			running: true
-		}
-		Connections {
-			target: tapBadge.ble_handler
-			onTimerUpdated: countdownAnimation.restart();
-		}
-	}
-
 	RadialGradient {
 		anchors.centerIn: parent;
 		width: parent.width + 10
@@ -91,7 +35,7 @@ Item {
 		anchors.fill: parent;
 
 		onClicked: {
-			tapBadge.ble_handler.initiate_find();
+			tapBadge.ble_handler.initiate_find("Tap Badge");
 		}
 
 		background: Rectangle {
@@ -113,9 +57,9 @@ Item {
 		}
 
 		Connections {
-			target: tapBadge.ble_handler
+			target: tapBadge.connHandler
 			onConnectionStatusUpdated: {
-				var handler = tapBadge.ble_handler;
+				var handler = tapBadge.connHandler;
 				var c = handler.connection
 
 				var oColor = -1;
@@ -123,12 +67,10 @@ Item {
 					oColor = Material.Red;
 				else if(c === BLE_Handler.FINDING)
 					oColor = Material.Purple;
-				else if(c === BLE_Handler.SYNCHED_PAUSE)
-					oColor = Material.Blue;
-				else if(c === BLE_Handler.SYNCHED_CONNECTED)
-					oColor = Material.Green;
-				else if(c === BLE_Handler.SYNCHED_CONNECTING)
+				else if(c === BLE_Handler.RECONNECTING)
 					oColor = Material.Cyan;
+				else if(c === BLE_Handler.CONNECTED)
+					oColor = Material.Green;
 
 				if(oColor != -1)
 					reconButtonBackground.materialCode = oColor;

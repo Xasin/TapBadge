@@ -23,9 +23,10 @@ public:
 		RECONNECTING,
 		CONNECTED,
 	};
+	Q_ENUM(CONNECTION_STATUS)
+
 private:
 	CONNECTION_STATUS connection_status;
-	Q_ENUM(CONNECTION_STATUS)
 
 	int resynch_tries;
 
