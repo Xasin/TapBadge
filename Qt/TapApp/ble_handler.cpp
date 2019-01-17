@@ -24,7 +24,7 @@ void BLE_Handler::update_status(CONNECTION_STATUS nStatus) {
 	qDebug()<<"New status set:"<<nStatus;
 
 	this->connection_status = nStatus;
-	emit connectionStatusUpdated();
+	emit connectionStatusUpdated(nStatus);
 }
 
 void BLE_Handler::connect_to(const QBluetoothDeviceInfo &device) {

@@ -7,6 +7,12 @@ Tap_BLE::Tap_BLE(QObject *parent) :
 	batteryPercent(0), batteryMV(0),
 	deviceWhoIs(0), whoIs(0)
 {
+	setup_mqtt();
+
+	setup_bt();
+}
+
+void Tap_BLE::setup_mqtt() {
 	connect(&mqtt_reconnet, &QTimer::timeout,
 			  this, [this]() {
 		if(this->mqtt_client.state() == QMqttClient::Connected)
@@ -27,41 +33,78 @@ Tap_BLE::Tap_BLE(QObject *parent) :
 	});
 
 	connect(&mqtt_client, &QMqttClient::connected, this,
-			  [this]() {
-		qDebug()<<"MQTT connected!";
-
-		mqtt_reconnet.stop();
-
-		mqtt_sub_whoIs = this->mqtt_client.subscribe(QString("Personal/Xasin/Switching/Who"));
-		connect(mqtt_sub_whoIs, &QMqttSubscription::messageReceived, this,
-				  [this](QMqttMessage msg) {
-			QString newWhoIs = msg.payload();
-			if(newWhoIs == this->whoIs)
-				return;
-
-			int whoIsCode = 0;
-			if(newWhoIs == "Xasin")
-				whoIsCode = 1;
-			else if(newWhoIs == "Neira")
-				whoIsCode = 2;
-			else if(newWhoIs == "Mesh")
-				whoIsCode = 3;
-
-			this->whoIs = whoIsCode;
-
-			connHandler.write_data('sw', QByteArray(reinterpret_cast<char *>(&whoIs), 1));
-
-			emit whoIsChanged();
-		});
+				[this]() {
+		setup_mqtt_subs();
 	});
 
-	connHandler.data_cb['sw'] = [this](const QByteArray &data) {
-		char whoIsNo = *data.data();
-		this->setWhoIs(whoIsNo);
-	};
+	mqtt_client.setCleanSession(false);
+	mqtt_client.setClientId("XasPhone_TapApp");
+	mqtt_client.setHostname("iot.eclipse.org");
+	mqtt_client.setPort(1883);
+	mqtt_client.setKeepAlive(10);
+
+	mqtt_client.setWillQoS(1);
+	mqtt_client.setWillTopic("Personal/Xasin/Tap/Connected");
+	mqtt_client.setWillRetain(true);
+	mqtt_client.setWillMessage(QString("APP DOWN").toUtf8());
+
+	mqtt_client.connectToHost();
+}
+
+void Tap_BLE::setup_mqtt_subs() {
+	qDebug()<<"MQTT connected!";
+
+	if(connHandler.getConnectionStatus() == connHandler.CONNECTED)
+		this->m_pub("Connected", "OK", 2, true);
+
+	mqtt_reconnet.stop();
+
+	mqtt_sub_whoIs = this->mqtt_client.subscribe(QString("Personal/Xasin/Switching/Who"));
+	connect(mqtt_sub_whoIs, &QMqttSubscription::messageReceived, this,
+			[this](QMqttMessage msg) {
+		QString newWhoIs = msg.payload();
+		if(newWhoIs == this->whoIs)
+		 return;
+
+		int whoIsCode = 0;
+		if(newWhoIs == "Xasin")
+			whoIsCode = 1;
+		else if(newWhoIs == "Neira")
+			whoIsCode = 2;
+		else if(newWhoIs == "Mesh")
+			whoIsCode = 3;
+
+		this->whoIs = whoIsCode;
+
+		connHandler.write_data('sw', QByteArray(reinterpret_cast<char *>(&whoIs), 1));
+
+		emit whoIsChanged();
+	});
+
+	auto mqtt_tap_cmd = this->mqtt_client.subscribe(QString("Personal/Xasin/Tap/#"), 1);
+	connect(mqtt_tap_cmd, &QMqttSubscription::messageReceived, this,
+			  [this](QMqttMessage msg) {
+		auto key = msg.topic().levels()[3];
+
+		qDebug()<<"Got control message for: "<<key;
+
+		if(key == "StdbyColor" && msg.payload().length() == 3)
+			connHandler.write_data('sc', msg.payload());
+	});
+}
+
+void Tap_BLE::setup_bt() {
+	connect(&connHandler, &BLE_Handler::connectionStatusUpdated, this,
+			  [this](BLE_Handler::CONNECTION_STATUS stat) {
+
+		QByteArray oData = QString(stat == BLE_Handler::CONNECTED ? "OK" : "").toUtf8();
+		this->m_pub("Connected", oData.data(), oData.length());
+	});
+
 	connHandler.data_cb['hi'] = [this](const QByteArray &data) {
-		this->mqtt_client.publish(QString("Personal/Xasin/Room/default/Commands"), data, 2);
+		this->m_pub("Morse/Out", data.data(), data.size());
 	};
+
 	connHandler.data_cb['BT'] = [this](const QByteArray &data) {
 #pragma pack(1)
 		struct BatteryPacket {
@@ -75,22 +118,16 @@ Tap_BLE::Tap_BLE(QObject *parent) :
 		this->batteryMV = bat.mvLevel;
 		this->batteryPercent = bat.charge;
 
+		m_pub("Battery", &bat, sizeof(bat));
+
 		emit deviceDataUpdated();
 	};
-
-	mqtt_client.setCleanSession(false);
-	mqtt_client.setClientId("XasPhone_TapApp");
-	mqtt_client.setHostname("iot.eclipse.org");
-	mqtt_client.setPort(1883);
-	mqtt_client.setKeepAlive(10000);
-
-	mqtt_client.connectToHost();
 
 	connHandler.initiate_find("Tap Badge");
 }
 
 void Tap_BLE::m_pub(QString topic, const void *data_ptr, int length, bool retain) {
-	mqtt_client.publish("Personal/Xasin/Tap" + topic,
+	mqtt_client.publish("Personal/Xasin/Tap/" + topic,
 							  QByteArray::fromRawData(reinterpret_cast<const char *>(data_ptr), length),
 							  1, retain);
 }

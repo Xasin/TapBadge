@@ -31,6 +31,10 @@ private:
 	int deviceWhoIs;
 	int whoIs;
 
+	void setup_mqtt();
+	void setup_mqtt_subs();
+	void setup_bt();
+
 	void m_pub(QString topic, const void *data_ptr, int length, bool retain = false);
 
 public:
@@ -47,6 +51,8 @@ public:
 signals:
 	void deviceDataUpdated();
 	void whoIsChanged();
+
+	void morse_received(QString morse);
 
 public slots:
 };

@@ -58,7 +58,7 @@ public:
 	void write_data(quint16, const QByteArray &data);
 
 signals:
-	void connectionStatusUpdated();
+	void connectionStatusUpdated(CONNECTION_STATUS stat);
 
 	void data_received(int ID, const QByteArray &rawData);
 
