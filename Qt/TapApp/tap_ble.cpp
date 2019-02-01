@@ -41,7 +41,7 @@ void Tap_BLE::setup_mqtt() {
 	mqtt_client.setClientId("XasPhone_TapApp");
 	mqtt_client.setHostname("iot.eclipse.org");
 	mqtt_client.setPort(1883);
-	mqtt_client.setKeepAlive(120);
+	mqtt_client.setKeepAlive(300);
 
 	mqtt_client.setWillQoS(1);
 	mqtt_client.setWillTopic("Personal/Xasin/Tap/Connection");

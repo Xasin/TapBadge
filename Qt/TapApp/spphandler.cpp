@@ -57,6 +57,7 @@ void SPPHandler::update_connection(CONNECTION_STATUS newStatus) {
 	if(newStatus == connection_status)
 		return;
 
+	qDebug()<<"Tap status is:"<<newStatus;
 	connection_status = newStatus;
 
 	if(connection_status == CONNECTED)

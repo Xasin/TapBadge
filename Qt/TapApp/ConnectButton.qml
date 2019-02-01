@@ -35,7 +35,7 @@ Item {
 		anchors.fill: parent;
 
 		onClicked: {
-			tapBadge.ble_handler.initiate_find("Tap Badge");
+			tapBadge.connHandler.initiate_find("Tap Badge");
 		}
 
 		background: Rectangle {
