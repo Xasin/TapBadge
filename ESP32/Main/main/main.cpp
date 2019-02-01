@@ -29,8 +29,6 @@
 #include <sstream>
 #include <string.h>
 
-#define RECONNECT_TIME 10000
-
 using namespace Peripheral;
 
 auto mainRegisters = Xasin::Communication::RegisterBlock();
@@ -62,6 +60,13 @@ void testTask(void * params) {
 
 	auto batRegister   = Xasin::Communication::ComRegister('BT', mainRegisters, &batStat, sizeof(batStat));
 
+	NotifyHandler::PatternElement noBLE[] = {
+			{Material::BLUE, 150000},
+			{Material::RED,  300000}
+	};
+
+	TickType_t lastDelayTime;
+
 	while(true) {
 		batStat.mvLevel = battery->read();
 		batStat.chgLevel = batteryEval.capacity_for_voltage(batStat.mvLevel);
@@ -75,8 +80,10 @@ void testTask(void * params) {
 		};
 
 		note.flash(btStart, 2);
+		if(!ble_channel.is_connected())
+			note.flash(noBLE, 2);
 
-		vTaskDelay(RECONNECT_TIME);
+		vTaskDelayUntil(&lastDelayTime, 9000 / portTICK_PERIOD_MS);
 	}
 }
 
@@ -90,7 +97,7 @@ extern "C" void app_main(void)
 
     esp_pm_config_esp32_t power_config = {};
     power_config.max_freq_mhz = 80;
-	power_config.min_freq_mhz = 80;
+	power_config.min_freq_mhz = 40;
 	power_config.light_sleep_enable = true;
     esp_pm_configure(&power_config);
 
@@ -101,12 +108,18 @@ extern "C" void app_main(void)
 
     battery = new Peripheral::Batman(ADC2_GPIO2_CHANNEL);
 
-    std::string testData;
     char whoIs = 0;
-    uint8_t touchVal;
 
     auto whoIsRegister = Xasin::Communication::ComRegister('sw', mainRegisters, &whoIs, 1, true);
     auto morseRegister = Xasin::Communication::ComRegister('hi', mainRegisters);
+
+    auto stdbyColor = Xasin::Communication::ComRegister('sc', mainRegisters);
+    stdbyColor.write_cb = [](Xasin::Communication::Data_Packet data) {
+    	uint32_t cCode = 0;
+    	memcpy(&cCode, data.data, 3);
+
+    	note.set_stdby_color(cCode);
+    };
 
     uint32_t colors[] = {Material::RED, Material::CYAN, Material::GREEN, Material::PURPLE, Material::BLUE, Material::ORANGE};
 
@@ -121,7 +134,9 @@ extern "C" void app_main(void)
     TaskHandle_t xHandle = NULL;
     xTaskCreate(testTask, "TTask", 2048, NULL, 2, &xHandle);
 
-    morse.word_callback = [&whoIs, &whoIsRegister, &morseRegister](std::string &word) {
+
+    std::string morsePrefix = "";
+    morse.word_callback = [&](std::string &word) {
     	if(word == "!off") {
     		NotifyHandler::PatternElement offP[] = {{Material::RED, 500000}};
     		note.flash(offP, 1);
@@ -132,23 +147,25 @@ extern "C" void app_main(void)
     		esp_deep_sleep_start();
     	}
 
-		uint8_t newWhoIs = whoIs;
-
-		morseRegister.update(word);
-
-    	if(word == "x")
-    		newWhoIs = 1;
-    	else if(word == "n")
-    		newWhoIs = 2;
-    	else if(word == "m")
-    		newWhoIs = 3;
-    	else if(word == "off")
-    		newWhoIs = 0;
-
-    	if(newWhoIs != whoIs) {
-    		whoIs = newWhoIs;
-    		whoIsRegister.update();
+    	if(word.data()[0] == '!') {
+    		if(word.length() == 1)
+    			morsePrefix = "";
+    		else
+    			morsePrefix = word + '!';
     	}
+    	else
+    		word = morsePrefix + word;
+
+    	morseRegister.update(word);
+
+    	if(word == "swx")
+    		whoIs = 1;
+    	else if(word == "swn")
+    		whoIs = 2;
+    	else if(word == "swm")
+    		whoIs = 3;
+    	else if(word == "sws")
+    		whoIs = 0;
 
     	rgb.apply();
     	rgb.update();
@@ -174,8 +191,6 @@ extern "C" void app_main(void)
 			{0, 500000}};
 
     while (true) {
-    	touchVal = testPad->read_raw();
-
     	switch(whoIs) {
     	case 1:
     		note.flash(xasinPattern, 4);

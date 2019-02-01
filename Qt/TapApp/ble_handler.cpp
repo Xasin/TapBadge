@@ -15,6 +15,20 @@ BLE_Handler::BLE_Handler(QObject *parent) : QObject(parent),
 			connect_to(device);
 		}
 	});
+
+	reconnect_timer.setSingleShot(true);
+
+	connect(&reconnect_timer, &QTimer::timeout, this,
+			  [this]() {
+		if(++resynch_tries > 10) {
+			reconnect_timer.stop();
+			update_status(DISCONNECTED);
+			return;
+		}
+
+		BLE_device->connectToDevice();
+		reconnect_timer.start(5000);
+	});
 }
 
 void BLE_Handler::update_status(CONNECTION_STATUS nStatus) {
@@ -37,11 +51,25 @@ void BLE_Handler::connect_to(const QBluetoothDeviceInfo &device) {
 	connect(BLE_device, &QLowEnergyController::connected,
 			  this, [this]() {
 		update_status(CONNECTED);
+
 		resynch_tries = 0;
+		reconnect_timer.stop();
+
+		auto params = QLowEnergyConnectionParameters();
+		params.setIntervalRange(100, 4000);
+		BLE_device->requestConnectionUpdate(params);
 
 		BLE_device->discoverServices();
 
 		qDebug()<<"Device connected, discovering services...";
+	});
+
+	connect(BLE_device, &QLowEnergyController::disconnected,
+			  this, [this]() {
+		update_status(RECONNECTING);
+
+		BLE_device->connectToDevice();
+		reconnect_timer.start(500);
 	});
 
 	connect(BLE_device, &QLowEnergyController::serviceDiscovered,

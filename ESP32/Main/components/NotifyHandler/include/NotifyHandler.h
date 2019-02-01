@@ -21,6 +21,8 @@ private:
 
 	SemaphoreHandle_t blinkSemaphore;
 
+	Color standby_color;
+
 public:
 	struct PatternElement {
 		Color 	 tColor;
@@ -30,6 +32,8 @@ public:
 	NotifyHandler(NeoController * const rgb);
 
 	void flash(PatternElement * const pattern, uint8_t num);
+
+	void set_stdby_color(Color c);
 
 	void lock();
 	void release();

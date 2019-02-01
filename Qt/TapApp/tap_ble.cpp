@@ -41,10 +41,10 @@ void Tap_BLE::setup_mqtt() {
 	mqtt_client.setClientId("XasPhone_TapApp");
 	mqtt_client.setHostname("iot.eclipse.org");
 	mqtt_client.setPort(1883);
-	mqtt_client.setKeepAlive(10);
+	mqtt_client.setKeepAlive(120);
 
 	mqtt_client.setWillQoS(1);
-	mqtt_client.setWillTopic("Personal/Xasin/Tap/Connected");
+	mqtt_client.setWillTopic("Personal/Xasin/Tap/Connection");
 	mqtt_client.setWillRetain(true);
 	mqtt_client.setWillMessage(QString("APP DOWN").toUtf8());
 
@@ -55,7 +55,7 @@ void Tap_BLE::setup_mqtt_subs() {
 	qDebug()<<"MQTT connected!";
 
 	if(connHandler.getConnectionStatus() == connHandler.CONNECTED)
-		this->m_pub("Connected", "OK", 2, true);
+		this->m_pub("Connection", "OK", 2, true);
 
 	mqtt_reconnet.stop();
 
@@ -97,8 +97,8 @@ void Tap_BLE::setup_bt() {
 	connect(&connHandler, &BLE_Handler::connectionStatusUpdated, this,
 			  [this](BLE_Handler::CONNECTION_STATUS stat) {
 
-		QByteArray oData = QString(stat == BLE_Handler::CONNECTED ? "OK" : "").toUtf8();
-		this->m_pub("Connected", oData.data(), oData.length());
+		QByteArray oData = QString(stat != BLE_Handler::DISCONNECTED ? "OK" : "NO DEVICE").toUtf8();
+		this->m_pub("Connection", oData.data(), oData.length());
 	});
 
 	connHandler.data_cb['hi'] = [this](const QByteArray &data) {
@@ -108,8 +108,8 @@ void Tap_BLE::setup_bt() {
 	connHandler.data_cb['BT'] = [this](const QByteArray &data) {
 #pragma pack(1)
 		struct BatteryPacket {
-			int8_t  charge;
-			int16_t mvLevel;
+			uint8_t  charge;
+			uint16_t mvLevel;
 		};
 #pragma pack()
 
@@ -155,8 +155,8 @@ void Tap_BLE::setWhoIs(int whoIs) {
 	this->whoIs = whoIs;
 	connHandler.write_data('sw', QByteArray(reinterpret_cast<char *>(&whoIs), 1));
 
-	QString whoIsNames[] = {"none", "Xasin", "Neira", "Mesh"};
-	mqtt_client.publish(QString("Personal/Xasin/Switching/Who"), whoIsNames[whoIs].toUtf8(), 1, true);
+	QString whoIsNames[] = {"sws", "swx", "swn", "swm"};
+	mqtt_client.publish(QString("Personal/Xasin/Tap/Morse/Out"), whoIsNames[whoIs].toUtf8(), 1);
 
 	emit whoIsChanged();
 }
