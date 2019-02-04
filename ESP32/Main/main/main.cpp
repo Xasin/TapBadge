@@ -14,6 +14,11 @@
 #include "driver/ledc.h"
 #include "driver/touch_pad.h"
 
+
+#include "esp_wifi.h"
+#include <cstring>
+
+
 #include "RegisterBlock.h"
 #include "BLESlaveChannel.h"
 
@@ -26,10 +31,17 @@
 #include "peripheral/batman.h"
 #include "BatteryManager.h"
 
+#include "xasin/mqtt/Handler.h"
+
 #include <sstream>
 #include <string.h>
 
+#define WIFI_PASSWD "f36eebda48\0"
+#define WIFI_SSID   "TP-LINK_84CDC2\0"
+
 using namespace Peripheral;
+
+auto testHandler = Xasin::MQTT::Handler();
 
 auto mainRegisters = Xasin::Communication::RegisterBlock();
 auto ble_channel   = Xasin::Communication::BLE_SlaveChannel("Tap Badge", mainRegisters);
@@ -52,10 +64,29 @@ auto batteryEval = Housekeeping::BatteryManager();
 
 esp_err_t event_handler(void *ctx, system_event_t *event)
 {
+	testHandler.wifi_handler(event);
+
+	switch(event->event_id) {
+    case SYSTEM_EVENT_STA_START:
+	puts("WiFi STA started!");
+        esp_wifi_connect();
+        break;
+    case SYSTEM_EVENT_STA_GOT_IP:
+    	puts("WiFi connected!");
+    	break;
+    case SYSTEM_EVENT_STA_DISCONNECTED:
+    	puts("WiFi disconnected!");
+    	esp_wifi_connect();
+    	break;
+    default:  break;
+	}
+
     return ESP_OK;
 }
 
 void testTask(void * params) {
+	puts("Battery task started!");
+
 	vTaskDelay(500/portTICK_PERIOD_MS);
 
 	auto batRegister   = Xasin::Communication::ComRegister('BT', mainRegisters, &batStat, sizeof(batStat));
@@ -97,11 +128,30 @@ extern "C" void app_main(void)
 
     esp_pm_config_esp32_t power_config = {};
     power_config.max_freq_mhz = 80;
-	power_config.min_freq_mhz = 40;
+	power_config.min_freq_mhz = 80;
 	power_config.light_sleep_enable = true;
     esp_pm_configure(&power_config);
 
-    ble_channel.start();
+    //ble_channel.start();
+
+    // WIFI TEST CODE - FIXME
+	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+
+	ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
+	ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
+	ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
+
+	wifi_config_t wifi_cfg = {};
+	wifi_sta_config_t* sta_cfg = &(wifi_cfg.sta);
+
+	memcpy(sta_cfg->password, WIFI_PASSWD, strlen(WIFI_PASSWD));
+	memcpy(sta_cfg->ssid, WIFI_SSID, strlen(WIFI_SSID));
+
+	ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_cfg) );
+	ESP_ERROR_CHECK( esp_wifi_start() );
+	// END WIFI TEST CODE
+
+    testHandler.start("mqtt://iot.eclipse.org");
 
     testPad = new Touch::Control(TOUCH_PAD_NUM0);
     testPad->charDetectHandle = morse.getDecodeHandle();
@@ -205,6 +255,9 @@ extern "C" void app_main(void)
 
     	}
     	vTaskDelay(3000 / portTICK_PERIOD_MS);
+
+    	const char *test = "Hi!";
+    	testHandler.publish_to("Xasin/Boop", test, 3);
     }
 }
 
