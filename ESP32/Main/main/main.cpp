@@ -32,9 +32,12 @@
 #include "BatteryManager.h"
 
 #include "xasin/mqtt/Handler.h"
+#include "xasin/mqtt/MQTTSlaveChannel.h"
 
 #include <sstream>
 #include <string.h>
+
+#include "esp_log.h"
 
 #define WIFI_PASSWD "f36eebda48\0"
 #define WIFI_SSID   "TP-LINK_84CDC2\0"
@@ -45,6 +48,7 @@ auto testHandler = Xasin::MQTT::Handler();
 
 auto mainRegisters = Xasin::Communication::RegisterBlock();
 auto ble_channel   = Xasin::Communication::BLE_SlaveChannel("Tap Badge", mainRegisters);
+auto mqtt_channel  = Xasin::MQTT::MQTTSlaveChannel(testHandler, "Xasin/TapTest", mainRegisters);
 
 Peripheral::NeoController rgb  = Peripheral::NeoController(GPIO_NUM_5, RMT_CHANNEL_0, 1);
 Peripheral::NotifyHandler note = Peripheral::NotifyHandler(&rgb);
@@ -184,6 +188,7 @@ extern "C" void app_main(void)
     TaskHandle_t xHandle = NULL;
     xTaskCreate(testTask, "TTask", 2048, NULL, 2, &xHandle);
 
+    esp_log_level_set("XAQTT", ESP_LOG_INFO);
 
     std::string morsePrefix = "";
     morse.word_callback = [&](std::string &word) {
@@ -257,7 +262,7 @@ extern "C" void app_main(void)
     	vTaskDelay(3000 / portTICK_PERIOD_MS);
 
     	const char *test = "Hi!";
-    	testHandler.publish_to("Xasin/Boop", test, 3);
+    	//testHandler.publish_to("Xasin/Boop", test, 3);
     }
 }
 
