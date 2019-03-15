@@ -23,7 +23,7 @@ void NotifyHandler::flash(PatternElement * const pattern, uint8_t num) {
 	}
 
 	(*rgb)[0] = standby_color;
-	rgb->fadeTransition(100000);
+	rgb->fadeTransition(400000);
 
 	release();
 }
