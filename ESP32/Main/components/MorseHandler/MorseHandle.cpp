@@ -9,6 +9,9 @@
 
 #include "MorseHandle.h"
 
+#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
+#include "esp_log.h"
+
 namespace Peripheral {
 
 char MorseHandle::dots_to_char(uint16_t dots) {
@@ -53,13 +56,16 @@ void MorseHandle::decode_thread() {
 		while(!touched)
 			xTaskNotifyWait(0, 0, &touched, portMAX_DELAY);
 
+		ESP_LOGD("MORSE", "Starting next sequence!");
 		while(true) {
 			lastChangeTime = esp_timer_get_time()/1000;
-			auto ret = xTaskNotifyWait(0, 0, &touched, dotTime*7);
+
+			auto ret = xTaskNotifyWait(0, 0, &touched, (dotTime*7)/portTICK_PERIOD_MS);
 			if(ret == pdFAIL)
 				touched = !touched;
 
 			uint32_t touchTime = (esp_timer_get_time()/1000) - lastChangeTime;
+			ESP_LOGD("MORSE", "Y/N:%d T:%d", touched, touchTime);
 
 			if(touched) {
 				if(touchTime > 2.5*dotTime) {
